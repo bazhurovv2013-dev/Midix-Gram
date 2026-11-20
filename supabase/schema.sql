@@ -87,7 +87,9 @@ create policy "profile self update" on public.profiles for update to authenticat
 drop policy if exists "admin manage profiles" on public.profiles;
 create policy "admin manage profiles" on public.profiles for all to authenticated using(public.is_midix_admin()) with check(public.is_midix_admin());
 drop policy if exists "chat members read chats" on public.chats;
-create policy "chat members read chats" on public.chats for select to authenticated using(public.is_chat_member(id) or public.is_midix_admin());
+create policy "chat members read chats" on public.chats for select to authenticated using(true);
+drop policy if exists "users join themselves" on public.chat_members;
+create policy "users join themselves" on public.chat_members for insert to authenticated with check(user_id=auth.uid());
 drop policy if exists "chat members read membership" on public.chat_members;
 create policy "chat members read membership" on public.chat_members for select to authenticated using(public.is_chat_member(chat_id) or public.is_midix_admin());
 drop policy if exists "members read messages" on public.messages;
@@ -107,6 +109,8 @@ on conflict(slug) do nothing;
 insert into public.gifts(title,emoji,price_stars,rarity) values
 ('Роза','🌹',15,'common'),('Мишка','🧸',50,'rare'),('Кристалл','💎',120,'epic'),('Корона','👑',500,'legendary'),('Ракета','🚀',250,'epic'),('Сюрприз','🎁',80,'rare')
 on conflict do nothing;
-alter publication supabase_realtime add table public.messages;
+do $ begin alter publication supabase_realtime add table public.messages; exception when duplicate_object then null; end $;
+revoke update on public.profiles from authenticated;
+grant update(username,display_name,avatar_url,bio) on public.profiles to authenticated;
 -- Create your first account, then grant admin in SQL:
 -- update public.profiles set role='admin' where username='YOUR_USERNAME';
