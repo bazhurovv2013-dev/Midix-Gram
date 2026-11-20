@@ -161,5 +161,17 @@ insert into public.gifts(title,emoji,price_stars,rarity) values
 on conflict do nothing;
 revoke update on public.profiles from authenticated;
 grant update(username,display_name,avatar_url,bio) on public.profiles to authenticated;
+create or replace function public.admin_set_profile_badges(target_user uuid, verified boolean, premium boolean, badge text)
+returns void language plpgsql security definer set search_path=public as $
+begin
+ if auth.uid() is null or not public.is_midix_admin() then
+  raise exception 'Admin access required' using errcode='42501';
+ end if;
+ update public.profiles set is_verified=verified,is_premium=premium,badge_label=nullif(left(trim(coalesce(badge,'')),32),'') where id=target_user;
+ if not found then raise exception 'Profile not found'; end if;
+end; $;
+revoke all on function public.admin_set_profile_badges(uuid,boolean,boolean,text) from public;
+grant execute on function public.admin_set_profile_badges(uuid,boolean,boolean,text) to authenticated;
+
 -- Create your first account, then grant admin in SQL:
 -- update public.profiles set role='admin' where username='YOUR_USERNAME';
