@@ -7,6 +7,7 @@ import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
 type Chat = { id:string; title:string; slug:string; is_group:boolean };
 type Msg = { id:string; chat_id:string; sender_id:string; body:string; created_at:string; profiles?:{username:string}|null };
+type Contact = { id:string; username:string; display_name:string|null };
 
 const gifts = [
   {emoji:"🌹",title:"Роза",price:15,rarity:"Обычный"},
@@ -42,6 +43,9 @@ export default function Home(){
  const [toast,setToast]=useState("");
  const [balance,setBalance]=useState(250);
  const [mobileChat,setMobileChat]=useState(false);
+ const [contacts,setContacts]=useState<Contact[]>([]);
+ const [contactQuery,setContactQuery]=useState("");
+ const [contactsLoading,setContactsLoading]=useState(false);
  const current=chats.find(c=>c.id===selected)||chats[0]||demoChats[0];
  const filtered=useMemo(()=>chats.filter(c=>c.title.toLowerCase().includes(query.toLowerCase())),[chats,query]);
  const say=(s:string)=>{setToast(s);window.setTimeout(()=>setToast(""),2600)};
@@ -59,15 +63,19 @@ export default function Home(){
   (async()=>{
    const {data:prof}=await supabase!.from("profiles").select("username,role").eq("id",session.user.id).maybeSingle();
    if(live&&prof)setProfile({username:prof.username,role:prof.role});
-   const {data:rooms}=await supabase!.from("chats").select("id,title,slug,is_group").order("created_at");
-   if(rooms?.length&&live){
-    setChats(rooms);
-    const {data:members}=await supabase!.from("chat_members").select("chat_id").eq("user_id",session.user.id);
-    const have=new Set((members||[]).map((m:any)=>m.chat_id));
-    const missing=rooms.filter((r:any)=>!have.has(r.id)).map((r:any)=>({chat_id:r.id,user_id:session.user.id}));
-    if(missing.length)await supabase!.from("chat_members").upsert(missing,{onConflict:"chat_id,user_id"});
-    if(rooms[0])setSelected((old)=>rooms.some((r:any)=>r.id===old)?old:rooms[0].id);
+   const {data:publicRooms}=await supabase!.from("chats").select("id,title,slug,is_group").eq("is_public",true).order("created_at");
+   if(publicRooms?.length){
+    const joins=publicRooms.map((r:any)=>({chat_id:r.id,user_id:session.user.id}));
+    await supabase!.from("chat_members").upsert(joins,{onConflict:"chat_id,user_id",ignoreDuplicates:true});
    }
+   const {data:members}=await supabase!.from("chat_members").select("chat_id").eq("user_id",session.user.id);
+   const ids=(members||[]).map((m:any)=>m.chat_id);
+   const {data:joined}=ids.length?await supabase!.from("chats").select("id,title,slug,is_group").in("id",ids).order("created_at"):({data:[] as any[]});
+   const rooms=[...(publicRooms||[]),...(joined||[])].filter((r:any,i:number,a:any[])=>a.findIndex(x=>x.id===r.id)===i);
+   if(live&&rooms.length){
+    setChats(rooms as Chat[]);
+    setSelected(old=>rooms.some((r:any)=>r.id===old)?old:rooms[0].id);
+   } else if(live){setChats([]);setSelected("");}
   })();
   return()=>{live=false};
  },[session]);
@@ -105,16 +113,40 @@ export default function Home(){
   const {error}=await supabase.from("messages").insert({chat_id:current.id,sender_id:session.user.id,body});
   if(error){setDraft(body);say(error.message)}
  }
+ async function loadContacts(){
+  if(!supabase||!session)return;
+  setContactsLoading(true);
+  const {data,error}=await supabase.from("profiles").select("id,username,display_name").neq("id",session.user.id).order("username").limit(100);
+  if(error)say(error.message);else setContacts((data||[]) as Contact[]);
+  setContactsLoading(false);
+ }
+ async function startDirectChat(person:Contact){
+  if(!supabase)return;
+  const {data,error}=await supabase.rpc("create_direct_chat",{target_user:person.id});
+  if(error){say(error.message);return}
+  const {data:room}=await supabase.from("chats").select("id,title,slug,is_group").eq("id",data).single();
+  if(room){setChats(old=>[room as Chat,...old.filter(c=>c.id!==room.id)]);setSelected(room.id);setActive("chats");setMobileChat(true);say("Личный чат создан")}
+ }
+ async function createGroup(){
+  if(!supabase||!session)return;
+  const title=window.prompt("Название группы");
+  if(!title?.trim())return;
+  const {data:room,error}=await supabase.from("chats").insert({title:title.trim().slice(0,60),is_group:true,is_public:false,created_by:session.user.id}).select("id,title,slug,is_group").single();
+  if(error||!room){say(error?.message||"Не удалось создать группу");return}
+  const {error:joinError}=await supabase.from("chat_members").insert({chat_id:room.id,user_id:session.user.id});
+  if(joinError){say(joinError.message);return}
+  setChats(old=>[room as Chat,...old]);setSelected(room.id);setActive("chats");setMobileChat(true);say("Группа создана");
+ }
  async function logout(){if(supabase)await supabase.auth.signOut();setSession(null);setProfile({username:"Гость",role:"user"})}
 
  if(!ready)return <div className="auth-screen"><div className="auth-card">Загрузка Midix Gram…</div></div>;
  if(!session)return <main className="auth-screen"><form className="auth-card" onSubmit={auth}><div className="brand-mark">M</div><span className="eyebrow">ТВОЁ ОБЩЕНИЕ • ТВОИ ПРАВИЛА</span><h1>Midix Gram</h1><p className="muted">Общайся, делись моментами и собирай подарки.</p><div className="auth-tabs"><button type="button" className={authMode==="login"?"selected":""} onClick={()=>setAuthMode("login")}>Войти</button><button type="button" className={authMode==="signup"?"selected":""} onClick={()=>setAuthMode("signup")}>Регистрация</button></div>{authMode==="signup"&&<label>Имя пользователя<input value={username} onChange={e=>setUsername(e.target.value)} required placeholder="Например, alex"/></label>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="name@example.com"/></label><label>Пароль<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={6} placeholder="Не менее 6 символов"/></label>{authError&&<p className="error">{authError}</p>}<button className="primary full" disabled={busy}>{busy?"Подождите…":authMode==="login"?"Войти":"Создать аккаунт"}</button>{!isSupabaseConfigured&&<div className="demo-note">Сервер пока не подключён. Добавь NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY в настройки проекта. Это не демо-авторизация: вход станет доступен после подключения.</div>}</form></main>;
 
  return <main className="app-shell">
-  <aside className="rail"><div className="brand-mark">M</div><button className={active==="chats"?"rail-btn active":"rail-btn"} onClick={()=>setActive("chats")} aria-label="Чаты"><MessageCircle/></button><button className={active==="gifts"?"rail-btn active":"rail-btn"} onClick={()=>setActive("gifts")} aria-label="Подарки"><Gift/></button><button className={active==="contacts"?"rail-btn active":"rail-btn"} onClick={()=>setActive("contacts")} aria-label="Контакты"><Users/></button>{profile.role==="admin"&&!native&&<button className="rail-btn" onClick={()=>location.href="/admin"} aria-label="Админ-панель"><ShieldCheck/></button>}<div className="rail-spacer"/><button className="rail-btn" onClick={logout} aria-label="Выйти"><LogOut/></button><div className="profile-mini">{profile.username.slice(0,1).toUpperCase()}</div></aside>
-  <section className={mobileChat?"sidebar mobile-hide":"sidebar"}><header className="side-header"><div><span className="eyebrow">MESSENGER</span><h1>Midix <b>Gram</b></h1></div><button className="icon-btn" onClick={()=>say("Создание чатов добавим следующим обновлением")}><Plus/></button></header><div className="search-box"><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Поиск чатов"/></div><div className="section-label">ВСЕ СООБЩЕНИЯ <span>{filtered.length}</span></div><div className="chat-list">{filtered.map((chat,i)=><button key={chat.id} onClick={()=>{setSelected(chat.id);setActive("chats");setMobileChat(true)}} className={selected===chat.id?"chat-row selected":"chat-row"}><span className="avatar" style={{background:["#64748b","#7c6cf2","#e58a65","#299c91"][i%4]}}>{chat.title[0]}</span><span className="chat-copy"><b>{chat.title}</b><small>{chat.slug==="news"?"Обновления Midix":"Нажми, чтобы открыть чат"}</small></span></button>)}</div><div className="sidebar-footer"><span className="status-dot"/>{isSupabaseConfigured?"Онлайн-соединение":"Сервер не настроен"} <MoreHorizontal size={17}/></div></section>
+  <aside className="rail"><div className="brand-mark">M</div><button className={active==="chats"?"rail-btn active":"rail-btn"} onClick={()=>setActive("chats")} aria-label="Чаты"><MessageCircle/></button><button className={active==="gifts"?"rail-btn active":"rail-btn"} onClick={()=>setActive("gifts")} aria-label="Подарки"><Gift/></button><button className={active==="contacts"?"rail-btn active":"rail-btn"} onClick={()=>{setActive("contacts");loadContacts()}} aria-label="Контакты"><Users/></button>{profile.role==="admin"&&!native&&<button className="rail-btn" onClick={()=>location.href="/admin"} aria-label="Админ-панель"><ShieldCheck/></button>}<div className="rail-spacer"/><button className="rail-btn" onClick={logout} aria-label="Выйти"><LogOut/></button><div className="profile-mini">{profile.username.slice(0,1).toUpperCase()}</div></aside>
+  <section className={mobileChat?"sidebar mobile-hide":"sidebar"}><header className="side-header"><div><span className="eyebrow">MESSENGER</span><h1>Midix <b>Gram</b></h1></div><button className="icon-btn" onClick={createGroup} aria-label="Создать группу"><Plus/></button></header><div className="search-box"><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Поиск чатов"/></div><div className="section-label">ВСЕ СООБЩЕНИЯ <span>{filtered.length}</span></div><div className="chat-list">{filtered.map((chat,i)=><button key={chat.id} onClick={()=>{setSelected(chat.id);setActive("chats");setMobileChat(true)}} className={selected===chat.id?"chat-row selected":"chat-row"}><span className="avatar" style={{background:["#64748b","#7c6cf2","#e58a65","#299c91"][i%4]}}>{chat.title[0]}</span><span className="chat-copy"><b>{chat.title}</b><small>{chat.slug==="news"?"Обновления Midix":"Нажми, чтобы открыть чат"}</small></span></button>)}</div><div className="sidebar-footer"><span className="status-dot"/>{isSupabaseConfigured?"Онлайн-соединение":"Сервер не настроен"} <MoreHorizontal size={17}/></div></section>
   <section className={mobileChat?"conversation":"conversation mobile-hide"}>
-   {active==="gifts"?<div className="welcome-panel"><div className="hero-icon"><Gift size={34}/></div><span className="eyebrow">MIDIX COLLECTIBLES</span><h2>Подарки и коллекции</h2><p>Каталог подарков. Реальные покупки и NFT пока отключены.</p><div className="gift-cards">{gifts.map(g=><article key={g.title}><span>{g.emoji}</span><b>{g.title}</b><small>{g.rarity}</small><strong>{g.price} ⭐</strong></article>)}</div></div>:active==="contacts"?<div className="welcome-panel"><div className="hero-icon"><Users size={34}/></div><h2>Контакты</h2><p>Поиск пользователей и личные чаты появятся следующим этапом.</p></div>:<><header className="conversation-header"><button className="back-mobile" onClick={()=>setMobileChat(false)}>‹</button><div className="avatar large">{current?.title?.[0]||"M"}</div><div className="person-title"><b>{current?.title||"Чат"}</b><small>{session.user.email}</small></div><div className="header-actions"><button className="icon-btn"><Search/></button><button className="icon-btn"><Bell/></button><button className="icon-btn"><MoreHorizontal/></button></div></header><div className="message-area"><div className="date-chip">СООБЩЕНИЯ</div>{messages.map(m=><div key={m.id} className={m.sender_id===session.user.id?"bubble outgoing":"bubble incoming"}>{m.sender_id===session.user.id?"Вы":m.profiles?.username||"Пользователь"}: {m.body}<small>{new Date(m.created_at).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</small></div>)}{messages.length===0&&<div className="system-note">Пока нет сообщений. Напиши первым!</div>}</div><form className="composer" onSubmit={send}><button type="button" className="icon-btn" onClick={()=>say("Вложения появятся в следующем обновлении")}><Plus/></button><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Написать сообщение…"/><button type="button" className="icon-btn muted" onClick={()=>setDraft(d=>d+" 😊")}><Smile/></button><button className="send-btn" aria-label="Отправить"><Send size={18}/></button></form></>}
+   {active==="gifts"?<div className="welcome-panel"><div className="hero-icon"><Gift size={34}/></div><span className="eyebrow">MIDIX COLLECTIBLES</span><h2>Подарки и коллекции</h2><p>Каталог подарков. Реальные покупки и NFT пока отключены.</p><div className="gift-cards">{gifts.map(g=><article key={g.title}><span>{g.emoji}</span><b>{g.title}</b><small>{g.rarity}</small><strong>{g.price} ⭐</strong></article>)}</div></div>:active==="contacts"?<div className="welcome-panel contacts-panel"><div className="hero-icon"><Users size={34}/></div><span className="eyebrow">MIDIX PEOPLE</span><h2>Контакты</h2><p>Найди пользователя и начни личный диалог.</p><div className="contact-search"><Search size={18}/><input value={contactQuery} onChange={e=>setContactQuery(e.target.value)} placeholder="Поиск по имени пользователя"/></div>{contactsLoading?<p>Загружаем пользователей…</p>:contacts.filter(p=>p.username.toLowerCase().includes(contactQuery.toLowerCase())||(p.display_name||"").toLowerCase().includes(contactQuery.toLowerCase())).map(p=><button className="contact-row" key={p.id} onClick={()=>startDirectChat(p)}><span className="avatar">{(p.display_name||p.username)[0].toUpperCase()}</span><span><b>{p.display_name||p.username}</b><small>@{p.username}</small></span><span className="contact-action">Написать</span></button>)}{!contactsLoading&&contacts.length===0&&<p>Пока нет других пользователей. Пригласи друзей зарегистрироваться.</p>}</div>:<><header className="conversation-header"><button className="back-mobile" onClick={()=>setMobileChat(false)}>‹</button><div className="avatar large">{current?.title?.[0]||"M"}</div><div className="person-title"><b>{current?.title||"Чат"}</b><small>{session.user.email}</small></div><div className="header-actions"><button className="icon-btn"><Search/></button><button className="icon-btn"><Bell/></button><button className="icon-btn"><MoreHorizontal/></button></div></header><div className="message-area"><div className="date-chip">СООБЩЕНИЯ</div>{messages.map(m=><div key={m.id} className={m.sender_id===session.user.id?"bubble outgoing":"bubble incoming"}>{m.sender_id===session.user.id?"Вы":m.profiles?.username||"Пользователь"}: {m.body}<small>{new Date(m.created_at).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</small></div>)}{messages.length===0&&<div className="system-note">Пока нет сообщений. Напиши первым!</div>}</div><form className="composer" onSubmit={send}><button type="button" className="icon-btn" onClick={()=>say("Вложения появятся в следующем обновлении")}><Plus/></button><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Написать сообщение…"/><button type="button" className="icon-btn muted" onClick={()=>setDraft(d=>d+" 😊")}><Smile/></button><button className="send-btn" aria-label="Отправить"><Send size={18}/></button></form></>}
   </section>
   <aside className="info-panel"><div className="info-top"><span className="eyebrow">ВАШ ПРОФИЛЬ</span><button className="icon-btn" onClick={logout}><LogOut/></button></div><div className="profile-card"><div className="profile-avatar">{profile.username.slice(0,1).toUpperCase()}</div><h2>{profile.username}</h2><p className="handle">{session.user.email}</p><span className="profile-badge"><ShieldCheck size={13}/> {profile.role==="admin"?"Администратор":"Midix member"}</span></div><div className="info-divider"/><div className="info-section"><div className="section-label">БЫСТРЫЙ ДОСТУП</div><button onClick={()=>setActive("gifts")}><Gift/> Подарки <span>✦</span></button><button onClick={()=>say("Медиафайлы появятся позже")}><ImageIcon/> Медиафайлы <span>—</span></button><button onClick={()=>say("Архив появится позже")}><Archive/> Архив чатов <span>—</span></button></div><div className="info-tip"><span>✦</span><b>Midix collectibles</b><p>Цифровые подарки и коллекции будут расширены после настройки сервера.</p></div>{!native&&profile.role==="admin"&&<a className="admin-link" href="/admin"><LockKeyhole size={14}/> ADMIN CONSOLE · WEB ONLY</a>}</aside>
   {toast&&<div className="toast">{toast}</div>}
