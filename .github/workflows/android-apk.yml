@@ -35,7 +35,8 @@ jobs:
           if marker not in s:
               raise SystemExit("Cannot find Android buildTypes block")
           start = s.index(marker) + len(marker)
-          s = s[:start] + "\n        release {\n            signingConfig signingConfigs.debug\n        }" + s[start:]
+          release = s.index("release {", start) + len("release {")
+          s = s[:release] + "\n            signingConfig signingConfigs.debug" + s[release:]
           p.write_text(s)
           PY
       - name: Build beta APK (release variant, debug signing key)
