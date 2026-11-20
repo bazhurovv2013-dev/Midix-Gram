@@ -27,8 +27,35 @@ jobs:
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug
+      - name: Build unsigned release APK
+        if: ${{ env.HAS_RELEASE_KEY == 'true' }}
+        working-directory: android
+        run: ./gradlew assembleRelease
+        env:
+          HAS_RELEASE_KEY: ${{ secrets.MIDIX_KEYSTORE_BASE64 != '' }}
+      - name: Sign release APK
+        if: ${{ env.HAS_RELEASE_KEY == 'true' }}
+        working-directory: android/app/build/outputs/apk/release
+        env:
+          HAS_RELEASE_KEY: ${{ secrets.MIDIX_KEYSTORE_BASE64 != '' }}
+          KEYSTORE_BASE64: ${{ secrets.MIDIX_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.MIDIX_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.MIDIX_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.MIDIX_KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/midix-release-key.jks"
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/zipalign" -v -p 4 app-release-unsigned.apk app-release-aligned.apk
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" sign --ks "$RUNNER_TEMP/midix-release-key.jks" --ks-key-alias "$KEY_ALIAS" --ks-pass env:KEYSTORE_PASSWORD --key-pass env:KEY_PASSWORD --out Midix-Gram-release.apk app-release-aligned.apk
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --verbose Midix-Gram-release.apk
+          rm -f "$RUNNER_TEMP/midix-release-key.jks"
       - uses: actions/upload-artifact@v4
         with:
           name: Midix-Gram-Android-debug
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: ${{ env.HAS_RELEASE_KEY == 'true' }}
+        with:
+          name: Midix-Gram-Android-release
+          path: android/app/build/outputs/apk/release/Midix-Gram-release.apk
           if-no-files-found: error
