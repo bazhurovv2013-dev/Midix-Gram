@@ -248,7 +248,7 @@ export default function Home(){
    const recorder=new MediaRecorder(stream,{mimeType:mime});
    voiceChunks.current=[];
    recorder.ondataavailable=e=>{if(e.data.size)voiceChunks.current.push(e.data);};
-   recorder.onstop=async()=>{const blob=new Blob(voiceChunks.current,{type:recorder.mimeType||"audio/webm"});stream.getTracks().forEach(t=>t.stop());setVoiceRecorder(null);setRecording(false);if(blob.size)await uploadChatMedia(new File([blob],"voice-"+Date.now()+".webm",{type:blob.type}),"audio");};
+   recorder.onstop=async()=>{const blob=new Blob(voiceChunks.current,{type:recorder.mimeType||"audio/webm"});stream.getTracks().forEach(t=>t.stop());setVoiceRecorder(null);setRecording(false);if(blob.size)await uploadChatMedia(new File([blob],"voice-"+Date.now()+".webm",{type:"audio/webm"}),"audio");};
    recorder.start();setVoiceRecorder(recorder);setRecording(true);say("Запись идёт — нажми ещё раз, чтобы отправить");
   }catch(err:any){say(err?.message||"Не удалось получить доступ к микрофону");}
  }
