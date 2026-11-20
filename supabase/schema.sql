@@ -1,7 +1,4 @@
 -- Midix Gram database schema. Execute once in Supabase SQL Editor.
-drop policy if exists "Members can view chat membership" on public.chat_members;
-drop policy if exists "Members can view messages" on public.messages;
-drop policy if exists "Members can send messages" on public.messages;
 create extension if not exists pgcrypto;
 
 create table if not exists public.profiles (
@@ -55,6 +52,19 @@ create table if not exists public.user_gifts (
   serial_number bigint generated always as identity
 );
 
+-- Upgrade an earlier Midix Gram prototype schema safely.
+alter table public.profiles add column if not exists role text not null default 'user';
+alter table public.profiles add column if not exists display_name text;
+alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists bio text not null default '';
+alter table public.chats add column if not exists slug text;
+alter table public.messages add column if not exists edited_at timestamptz;
+drop policy if exists "Members can view chat membership" on public.chat_members;
+drop policy if exists "Members can view messages" on public.messages;
+drop policy if exists "Members can send messages" on public.messages;
+alter table public.messages drop constraint if exists messages_sender_id_fkey;
+alter table public.messages add constraint messages_sender_id_fkey foreign key(sender_id) references public.profiles(id) on delete set null;
+
 create or replace function public.is_chat_member(target_chat uuid) returns boolean
 language sql stable security definer set search_path=public as $$
  select exists(select 1 from public.chat_members where chat_id=target_chat and user_id=auth.uid());
@@ -68,6 +78,9 @@ language plpgsql security definer set search_path=public as $$
 declare base_name text;
 begin
  base_name := coalesce(nullif(new.raw_user_meta_data->>'username',''),split_part(coalesce(new.email,'member'),'@',1));
+ if exists(select 1 from public.profiles p where p.username=base_name and p.id<>new.id) then
+   base_name := base_name || '_' || substr(replace(new.id::text,'-',''),1,6);
+ end if;
  insert into public.profiles(id,username,display_name)
  values(new.id,base_name,coalesce(new.raw_user_meta_data->>'display_name',base_name))
  on conflict(id) do nothing;
@@ -86,7 +99,7 @@ alter table public.user_gifts enable row level security;
 drop policy if exists "profiles public read" on public.profiles;
 create policy "profiles public read" on public.profiles for select to authenticated using(true);
 drop policy if exists "profile self update" on public.profiles;
-create policy "profile self update" on public.profiles for update to authenticated using(id=auth.uid()) with check(id=auth.uid() and role=(select p.role from public.profiles p where p.id=auth.uid()));
+create policy "profile self update" on public.profiles for update to authenticated using(id=auth.uid()) with check(id=auth.uid());
 drop policy if exists "admin manage profiles" on public.profiles;
 create policy "admin manage profiles" on public.profiles for all to authenticated using(public.is_midix_admin()) with check(public.is_midix_admin());
 drop policy if exists "chat members read chats" on public.chats;
