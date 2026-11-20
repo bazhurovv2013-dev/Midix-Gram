@@ -1,4 +1,7 @@
 -- Midix Gram database schema. Execute once in Supabase SQL Editor.
+drop policy if exists "Members can view chat membership" on public.chat_members;
+drop policy if exists "Members can view messages" on public.messages;
+drop policy if exists "Members can send messages" on public.messages;
 create extension if not exists pgcrypto;
 
 create table if not exists public.profiles (
