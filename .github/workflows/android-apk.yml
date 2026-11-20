@@ -9,6 +9,8 @@ permissions:
 jobs:
   android:
     runs-on: ubuntu-latest
+    env:
+      HAS_RELEASE_KEY: ${{ secrets.MIDIX_KEYSTORE_BASE64 != '' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,13 +33,10 @@ jobs:
         if: ${{ env.HAS_RELEASE_KEY == 'true' }}
         working-directory: android
         run: ./gradlew assembleRelease
-        env:
-          HAS_RELEASE_KEY: ${{ secrets.MIDIX_KEYSTORE_BASE64 != '' }}
       - name: Sign release APK
         if: ${{ env.HAS_RELEASE_KEY == 'true' }}
         working-directory: android/app/build/outputs/apk/release
         env:
-          HAS_RELEASE_KEY: ${{ secrets.MIDIX_KEYSTORE_BASE64 != '' }}
           KEYSTORE_BASE64: ${{ secrets.MIDIX_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.MIDIX_KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.MIDIX_KEY_ALIAS }}
