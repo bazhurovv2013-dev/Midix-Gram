@@ -85,7 +85,7 @@ export default function Home(){
    const {data:sender}=await supabase!.from("profiles").select("username").eq("id",row.sender_id).maybeSingle();
    setMessages(old=>[...old,{...row,profiles:sender}]);
   }).subscribe();
-  return()=>{live=false;supabase.removeChannel(channel)};
+  return()=>{live=false;supabase!.removeChannel(channel)};
  },[session,current?.id]);
  async function auth(e:React.FormEvent){
   e.preventDefault();setAuthError("");setBusy(true);
