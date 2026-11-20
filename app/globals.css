@@ -60,3 +60,10 @@
 .premium-note{display:flex;align-items:center;justify-content:center;gap:8px;color:#f1d28b!important}
 .rail-btn:focus-visible,.icon-btn:focus-visible,.chat-row:focus-visible,.primary:focus-visible{outline:2px solid #a99fff;outline-offset:2px}
 @media(max-width:650px){.profile-editor{padding:18px;max-height:calc(100dvh - 24px)}.profile-form{margin-top:16px}.rail{z-index:5}.sidebar,.conversation{min-height:0}.conversation{z-index:2}}
+
+.admin-user-row{grid-template-columns:1.2fr 1fr 2.2fr .8fr}
+.admin-user-badges{display:flex;gap:4px;flex-wrap:wrap}
+.admin-user-badges i{font-style:normal;font-size:9px;color:#d9ccff;background:#30294c;border-radius:6px;padding:4px 6px}
+.admin-user-actions{display:flex;gap:5px;flex-wrap:wrap}
+.admin-user-actions button{font-size:9px;padding:7px 8px;white-space:nowrap}
+@media(max-width:800px){.admin-user-row{grid-template-columns:1fr 1fr}.admin-user-actions{grid-column:1/-1}.admin-table-row.heading{display:none}}
