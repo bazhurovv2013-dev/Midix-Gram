@@ -109,14 +109,14 @@ export default function Home(){
   try{
    if(!supabase){setAuthError("Сервер авторизации не настроен.");return}
    if(authMethod==="phone"){
-    const normalized=phone.replace(/[\\s()-]/g,"");
-    if(!/^\\+[1-9]\\d{7,14}$/.test(normalized)){setAuthError("Введи номер в международном формате, например +31612345678.");return}
+    const normalized=phone.replace(/[\s()-]/g,"");
+    if(!/^\+[1-9]\d{7,14}$/.test(normalized)){setAuthError("Введи номер в международном формате, например +31612345678.");return}
     if(!otpSent){
      if(authMode==="signup"&&(!firstName.trim()||!username.trim())){setAuthError("Укажи имя и username.");return}
      const {error}=await supabase.auth.signInWithOtp({phone:normalized,options:{shouldCreateUser:authMode==="signup",data:authMode==="signup"?{username:username.trim().toLowerCase(),display_name:[firstName.trim(),lastName.trim()].filter(Boolean).join(" ")}:undefined}});
      if(error)throw error;setPhone(normalized);setOtpSent(true);say("Код отправлен по SMS");
     }else{
-     if(!/^\\d{6}$/.test(otp.trim())){setAuthError("Введи 6-значный код из SMS.");return}
+     if(!/^\d{6}$/.test(otp.trim())){setAuthError("Введи 6-значный код из SMS.");return}
      const {error}=await supabase.auth.verifyOtp({phone:normalized,token:otp.trim(),type:"sms"});
      if(error)throw error;
     }
@@ -172,7 +172,7 @@ export default function Home(){
   {authMethod==="phone"?<>
    {authMode==="signup"&&!otpSent&&<><div className="auth-name-grid"><label>Имя<input value={firstName} onChange={e=>setFirstName(e.target.value)} required placeholder="Имя"/></label><label>Фамилия<input value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Фамилия"/></label></div><label>Имя пользователя<input value={username} onChange={e=>setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g,""))} required minLength={3} placeholder="username"/></label></>}
    <label>Номер телефона<input type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} required placeholder="+31 6 12345678" disabled={otpSent}/></label>
-   {otpSent&&<><div className="otp-hint">Мы отправили код на <b>{phone}</b></div><label>Код подтверждения<input inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e=>setOtp(e.target.value.replace(/\\D/g,"").slice(0,6))} required placeholder="123456" maxLength={6}/></label><button type="button" className="auth-resend" onClick={()=>{setOtpSent(false);setOtp("");setAuthError("")}}>Изменить номер</button></>}
+   {otpSent&&<><div className="otp-hint">Мы отправили код на <b>{phone}</b></div><label>Код подтверждения<input inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,"").slice(0,6))} required placeholder="123456" maxLength={6}/></label><button type="button" className="auth-resend" onClick={()=>{setOtpSent(false);setOtp("");setAuthError("")}}>Изменить номер</button></>}
   </>:<>
    {authMode==="signup"&&<><div className="auth-name-grid"><label>Имя<input value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="Имя"/></label><label>Фамилия<input value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Фамилия"/></label></div><label>Имя пользователя<input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Например, alex"/></label></>}
    <label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="name@example.com"/></label><label>Пароль<input type="password" autoComplete={authMode==="signup"?"new-password":"current-password"} value={password} onChange={e=>setPassword(e.target.value)} required minLength={6} placeholder="Не менее 6 символов"/></label>
