@@ -30,6 +30,9 @@ export default function Home(){
  const [authMode,setAuthMode]=useState<"login"|"signup">("login");
  const [email,setEmail]=useState("");
  const [password,setPassword]=useState("");
+ const [authMethod,setAuthMethod]=useState<"phone"|"email">("phone");
+ const [phone,setPhone]=useState(""); const [otp,setOtp]=useState(""); const [otpSent,setOtpSent]=useState(false);
+ const [firstName,setFirstName]=useState(""); const [lastName,setLastName]=useState("");
  const [username,setUsername]=useState("");
  const [authError,setAuthError]=useState("");
  const [busy,setBusy]=useState(false);
@@ -104,9 +107,21 @@ export default function Home(){
  async function auth(e:React.FormEvent){
   e.preventDefault();setAuthError("");setBusy(true);
   try{
-   if(!supabase){setAuthError("Добавь ключи Supabase в GitHub Secrets и .env.local — тогда регистрация будет онлайн.");return}
-   if(authMode==="signup"){
-    const {error}=await supabase.auth.signUp({email,password,options:{data:{username:username.trim()||email.split("@")[0]}}});
+   if(!supabase){setAuthError("Сервер авторизации не настроен.");return}
+   if(authMethod==="phone"){
+    const normalized=phone.replace(/[\\s()-]/g,"");
+    if(!/^\\+[1-9]\\d{7,14}$/.test(normalized)){setAuthError("Введи номер в международном формате, например +31612345678.");return}
+    if(!otpSent){
+     if(authMode==="signup"&&(!firstName.trim()||!username.trim())){setAuthError("Укажи имя и username.");return}
+     const {error}=await supabase.auth.signInWithOtp({phone:normalized,options:{shouldCreateUser:authMode==="signup",data:authMode==="signup"?{username:username.trim().toLowerCase(),display_name:[firstName.trim(),lastName.trim()].filter(Boolean).join(" ")}:undefined}});
+     if(error)throw error;setPhone(normalized);setOtpSent(true);say("Код отправлен по SMS");
+    }else{
+     if(!/^\\d{6}$/.test(otp.trim())){setAuthError("Введи 6-значный код из SMS.");return}
+     const {error}=await supabase.auth.verifyOtp({phone:normalized,token:otp.trim(),type:"sms"});
+     if(error)throw error;
+    }
+   }else if(authMode==="signup"){
+    const {error}=await supabase.auth.signUp({email,password,options:{data:{username:username.trim()||email.split("@")[0],display_name:[firstName.trim(),lastName.trim()].filter(Boolean).join(" ")}}});
     if(error)throw error;say("Проверь почту для подтверждения регистрации");
    }else{const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error}
   }catch(err:any){setAuthError(err.message||"Ошибка авторизации")}finally{setBusy(false)}
@@ -150,7 +165,23 @@ export default function Home(){
  async function updateAdminPerson(person:AdminPerson,patch:Partial<AdminPerson>){if(!supabase)return;const next={...person,...patch};const {error}=await supabase.rpc("admin_set_profile_badges",{target_user:person.id,verified:next.is_verified,premium:next.is_premium,badge:next.badge_label||""});if(error){setAdminError(error.message);return;}setAdminPeople(old=>old.map(p=>p.id===person.id?next:p));say("Изменения сохранены");}
 
  if(!ready)return <div className="auth-screen"><div className="auth-card">Загрузка Midix Gram…</div></div>;
- if(!session)return <main className="auth-screen"><form className="auth-card" onSubmit={auth}><div className="brand-mark">M</div><span className="eyebrow">ТВОЁ ОБЩЕНИЕ • ТВОИ ПРАВИЛА</span><h1>Midix Gram</h1><p className="muted">Общайся, делись моментами и собирай подарки.</p><div className="auth-tabs"><button type="button" className={authMode==="login"?"selected":""} onClick={()=>setAuthMode("login")}>Войти</button><button type="button" className={authMode==="signup"?"selected":""} onClick={()=>setAuthMode("signup")}>Регистрация</button></div>{authMode==="signup"&&<label>Имя пользователя<input value={username} onChange={e=>setUsername(e.target.value)} required placeholder="Например, alex"/></label>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="name@example.com"/></label><label>Пароль<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={6} placeholder="Не менее 6 символов"/></label>{authError&&<p className="error">{authError}</p>}<button className="primary full" disabled={busy}>{busy?"Подождите…":authMode==="login"?"Войти":"Создать аккаунт"}</button>{!isSupabaseConfigured&&<div className="demo-note">Сервер пока не подключён. Добавь NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY в настройки проекта. Это не демо-авторизация: вход станет доступен после подключения.</div>}</form></main>;
+ if(!session)return <main className="auth-screen"><form className="auth-card telegram-auth" onSubmit={auth}>
+  <div className="telegram-auth-top"><div className="brand-mark">M</div><span className="eyebrow">MIDIX GRAM</span><h1>{authMode==="signup"?"Создать аккаунт":"Добро пожаловать"}</h1><p className="muted">{authMode==="signup"?"Присоединяйся к друзьям и общайся без границ.":"Войди, чтобы продолжить общение."}</p></div>
+  <div className="auth-tabs"><button type="button" className={authMode==="login"?"selected":""} onClick={()=>{setAuthMode("login");setOtpSent(false);setOtp("");setAuthError("")}}>Войти</button><button type="button" className={authMode==="signup"?"selected":""} onClick={()=>{setAuthMode("signup");setOtpSent(false);setOtp("");setAuthError("")}}>Регистрация</button></div>
+  <div className="auth-method-tabs"><button type="button" className={authMethod==="phone"?"chosen":""} onClick={()=>{setAuthMethod("phone");setOtpSent(false);setAuthError("")}}>Телефон</button><button type="button" className={authMethod==="email"?"chosen":""} onClick={()=>{setAuthMethod("email");setOtpSent(false);setAuthError("")}}>Email</button></div>
+  {authMethod==="phone"?<>
+   {authMode==="signup"&&!otpSent&&<><div className="auth-name-grid"><label>Имя<input value={firstName} onChange={e=>setFirstName(e.target.value)} required placeholder="Имя"/></label><label>Фамилия<input value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Фамилия"/></label></div><label>Имя пользователя<input value={username} onChange={e=>setUsername(e.target.value.replace(/[^a-zA-Z0-9_]/g,""))} required minLength={3} placeholder="username"/></label></>}
+   <label>Номер телефона<input type="tel" inputMode="tel" autoComplete="tel" value={phone} onChange={e=>setPhone(e.target.value)} required placeholder="+31 6 12345678" disabled={otpSent}/></label>
+   {otpSent&&<><div className="otp-hint">Мы отправили код на <b>{phone}</b></div><label>Код подтверждения<input inputMode="numeric" autoComplete="one-time-code" value={otp} onChange={e=>setOtp(e.target.value.replace(/\\D/g,"").slice(0,6))} required placeholder="123456" maxLength={6}/></label><button type="button" className="auth-resend" onClick={()=>{setOtpSent(false);setOtp("");setAuthError("")}}>Изменить номер</button></>}
+  </>:<>
+   {authMode==="signup"&&<><div className="auth-name-grid"><label>Имя<input value={firstName} onChange={e=>setFirstName(e.target.value)} placeholder="Имя"/></label><label>Фамилия<input value={lastName} onChange={e=>setLastName(e.target.value)} placeholder="Фамилия"/></label></div><label>Имя пользователя<input value={username} onChange={e=>setUsername(e.target.value)} placeholder="Например, alex"/></label></>}
+   <label>Email<input type="email" autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="name@example.com"/></label><label>Пароль<input type="password" autoComplete={authMode==="signup"?"new-password":"current-password"} value={password} onChange={e=>setPassword(e.target.value)} required minLength={6} placeholder="Не менее 6 символов"/></label>
+  </>}
+  {authError&&<p className="error">{authError}</p>}
+  <button className="primary full" disabled={busy}>{busy?"Подождите…":authMethod==="phone"?(otpSent?"Подтвердить и продолжить":"Продолжить"):(authMode==="login"?"Войти":"Создать аккаунт")}</button>
+  {authMethod==="phone"&&<div className="auth-footnote">Вход по номеру использует SMS-подтверждение. Доступность зависит от настройки SMS-провайдера в Supabase.</div>}
+  {!isSupabaseConfigured&&<div className="demo-note">Сервер пока не подключён. Настрой Supabase, чтобы включить онлайн-регистрацию.</div>}
+ </form></main>;
 
  return <main className={mobileChat?"app-shell chat-open":"app-shell"}>
   <aside className="rail"><div className="brand-mark">M</div><button className={active==="chats"?"rail-btn active":"rail-btn"} onClick={()=>openSection("chats")} aria-label="Чаты"><MessageCircle/></button><button className={active==="contacts"?"rail-btn active":"rail-btn"} onClick={()=>openSection("contacts")} aria-label="Контакты"><Users/></button><button className={active==="gifts"?"rail-btn active":"rail-btn"} onClick={()=>openSection("gifts")} aria-label="Подарки"><Gift/></button><button className={active==="profile"?"rail-btn active":"rail-btn"} onClick={()=>openSection("profile")} aria-label="Профиль"><UserRound/></button><button className={active==="settings"?"rail-btn active":"rail-btn"} onClick={()=>openSection("settings")} aria-label="Настройки"><Settings/></button>{profile.role==="admin"&&<button className="rail-btn" onClick={()=>openSection("admin")} aria-label="Админ-панель"><ShieldCheck/></button>}<div className="rail-spacer"/><button className="rail-btn" onClick={logout} aria-label="Выйти"><LogOut/></button><div className="profile-mini">{profile.username.slice(0,1).toUpperCase()}</div></aside>
