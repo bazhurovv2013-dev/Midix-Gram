@@ -1,86 +1,122 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Archive, Bell, Gift, Image as ImageIcon, MessageCircle, MoreHorizontal, Plus, Search, Send, Settings, ShieldCheck, Smile, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { Archive, Bell, Gift, Image as ImageIcon, MessageCircle, MoreHorizontal, Plus, Search, Send, Settings, ShieldCheck, Smile, Users, LogOut, LockKeyhole } from "lucide-react";
+import { isSupabaseConfigured, supabase } from "../lib/supabase";
 
-type Chat = { id: number; name: string; message: string; time: string; unread?: number; color: string; online?: boolean };
-
-const initialChats: Chat[] = [
-  { id: 1, name: "Избранное", message: "Заметки и сохранённые сообщения", time: "12:40", color: "#64748b" },
-  { id: 2, name: "Команда Midix", message: "Добро пожаловать в Midix Gram!", time: "12:18", unread: 3, color: "#7c6cf2", online: true },
-  { id: 3, name: "Алексей", message: "Отправил тебе подарок 🎁", time: "11:52", color: "#e58a65", online: true },
-  { id: 4, name: "Дизайн и идеи", message: "Новый вариант интерфейса готов", time: "Вчера", color: "#299c91" },
-  { id: 5, name: "Мария", message: "Спасибо! ✨", time: "Вчера", color: "#bd79b8" }
-];
+type Chat = { id:string; title:string; slug:string; is_group:boolean };
+type Msg = { id:string; chat_id:string; sender_id:string; body:string; created_at:string; profiles?:{username:string}|null };
 
 const gifts = [
-  { emoji: "🌹", name: "Роза", price: "15 ⭐", rarity: "Обычный" },
-  { emoji: "🧸", name: "Мишка", price: "50 ⭐", rarity: "Редкий" },
-  { emoji: "💎", name: "Кристалл", price: "120 ⭐", rarity: "Эпический" },
-  { emoji: "👑", name: "Корона", price: "500 ⭐", rarity: "Легендарный" },
-  { emoji: "🚀", name: "Ракета", price: "250 ⭐", rarity: "Эпический" },
-  { emoji: "🎁", name: "Сюрприз", price: "80 ⭐", rarity: "Редкий" }
+  {emoji:"🌹",title:"Роза",price:15,rarity:"Обычный"},
+  {emoji:"🧸",title:"Мишка",price:50,rarity:"Редкий"},
+  {emoji:"💎",title:"Кристалл",price:120,rarity:"Эпический"},
+  {emoji:"👑",title:"Корона",price:500,rarity:"Легендарный"},
+  {emoji:"🚀",title:"Ракета",price:250,rarity:"Эпический"},
+  {emoji:"🎁",title:"Сюрприз",price:80,rarity:"Редкий"}
+];
+const demoChats:Chat[]=[
+ {id:"demo-general",title:"Общий чат",slug:"general",is_group:true},
+ {id:"demo-friends",title:"Друзья",slug:"friends",is_group:true},
+ {id:"demo-news",title:"Новости Midix",slug:"news",is_group:true}
 ];
 
-export default function Home() {
-  const [active, setActive] = useState("chats");
-  const [selected, setSelected] = useState(2);
-  const [query, setQuery] = useState("");
-  const [message, setMessage] = useState("");
-  const [sent, setSent] = useState<string[]>([]);
-  const [chats, setChats] = useState(initialChats);
-  const current = chats.find(c => c.id === selected) ?? chats[1];
-  const filtered = useMemo(() => chats.filter(c => c.name.toLowerCase().includes(query.toLowerCase())), [chats, query]);
+export default function Home(){
+ const [session,setSession]=useState<Session|null>(null);
+ const [ready,setReady]=useState(false);
+ const [authMode,setAuthMode]=useState<"login"|"signup">("login");
+ const [email,setEmail]=useState("");
+ const [password,setPassword]=useState("");
+ const [username,setUsername]=useState("");
+ const [authError,setAuthError]=useState("");
+ const [busy,setBusy]=useState(false);
+ const [active,setActive]=useState("chats");
+ const [chats,setChats]=useState<Chat[]>(demoChats);
+ const [selected,setSelected]=useState("demo-general");
+ const [messages,setMessages]=useState<Msg[]>([]);
+ const [draft,setDraft]=useState("");
+ const [query,setQuery]=useState("");
+ const [profile,setProfile]=useState<{username:string;role:string}>({username:"Гость",role:"user"});
+ const [native,setNative]=useState(false);
+ const [toast,setToast]=useState("");
+ const [balance,setBalance]=useState(250);
+ const [mobileChat,setMobileChat]=useState(false);
+ const current=chats.find(c=>c.id===selected)||chats[0];
+ const filtered=useMemo(()=>chats.filter(c=>c.title.toLowerCase().includes(query.toLowerCase())),[chats,query]);
+ const say=(s:string)=>{setToast(s);window.setTimeout(()=>setToast(""),2600)};
 
-  function sendMessage() {
-    if (!message.trim()) return;
-    setSent(old => [...old, message.trim()]);
-    setMessage("");
-  }
+ useEffect(()=>{
+  setNative(/Capacitor|MidixGramAndroid/i.test(navigator.userAgent));
+  if(!supabase){setReady(true);return}
+  supabase.auth.getSession().then(({data})=>{setSession(data.session);setReady(true)});
+  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,next)=>setSession(next));
+  return()=>subscription.unsubscribe();
+ },[]);
+ useEffect(()=>{
+  if(!session||!supabase)return;
+  let live=true;
+  (async()=>{
+   const {data:prof}=await supabase!.from("profiles").select("username,role").eq("id",session.user.id).maybeSingle();
+   if(live&&prof)setProfile({username:prof.username,role:prof.role});
+   const {data:rooms}=await supabase!.from("chats").select("id,title,slug,is_group").order("created_at");
+   if(rooms?.length&&live){
+    setChats(rooms);
+    const {data:members}=await supabase!.from("chat_members").select("chat_id").eq("user_id",session.user.id);
+    const have=new Set((members||[]).map((m:any)=>m.chat_id));
+    const missing=rooms.filter((r:any)=>!have.has(r.id)).map((r:any)=>({chat_id:r.id,user_id:session.user.id}));
+    if(missing.length)await supabase!.from("chat_members").upsert(missing,{onConflict:"chat_id,user_id"});
+    if(rooms[0])setSelected((old)=>rooms.some((r:any)=>r.id===old)?old:rooms[0].id);
+   }
+  })();
+  return()=>{live=false};
+ },[session]);
+ useEffect(()=>{
+  if(!session||!supabase||!current||current.id.startsWith("demo-")){setMessages([]);return}
+  let live=true;
+  (async()=>{
+   const {data,error}=await supabase!.from("messages").select("id,chat_id,sender_id,body,created_at,profiles(username)").eq("chat_id",current.id).order("created_at").limit(100);
+   if(live&&!error)setMessages((data||[]) as unknown as Msg[]);
+   if(error&&live)say(error.message);
+  })();
+  const channel=supabase.channel("messages-"+current.id).on("postgres_changes",{event:"INSERT",schema:"public",table:"messages",filter:"chat_id=eq."+current.id},async payload=>{
+   const row=payload.new as Msg;
+   if(!live)return;
+   const {data:sender}=await supabase!.from("profiles").select("username").eq("id",row.sender_id).maybeSingle();
+   setMessages(old=>[...old,{...row,profiles:sender}]);
+  }).subscribe();
+  return()=>{live=false;supabase.removeChannel(channel)};
+ },[session,current?.id]);
+ async function auth(e:React.FormEvent){
+  e.preventDefault();setAuthError("");setBusy(true);
+  try{
+   if(!supabase){setAuthError("Добавь ключи Supabase в GitHub Secrets и .env.local — тогда регистрация будет онлайн.");return}
+   if(authMode==="signup"){
+    const {error}=await supabase.auth.signUp({email,password,options:{data:{username:username.trim()||email.split("@")[0]}}});
+    if(error)throw error;say("Проверь почту для подтверждения регистрации");
+   }else{const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error}
+  }catch(err:any){setAuthError(err.message||"Ошибка авторизации")}finally{setBusy(false)}
+ }
+ async function send(e:React.FormEvent){
+  e.preventDefault();const body=draft.trim();if(!body)return;
+  if(!session||!supabase){say("Войди в аккаунт, чтобы отправлять сообщения");return}
+  if(current.id.startsWith("demo-")){say("Не удалось найти комнату на сервере");return}
+  setDraft("");
+  const {error}=await supabase.from("messages").insert({chat_id:current.id,sender_id:session.user.id,body});
+  if(error){setDraft(body);say(error.message)}
+ }
+ async function logout(){if(supabase)await supabase.auth.signOut();setSession(null);setProfile({username:"Гость",role:"user"})}
 
-  return (
-    <main className="app-shell">
-      <aside className="rail">
-        <div className="brand-mark">M</div>
-        <button className={active === "chats" ? "rail-btn active" : "rail-btn"} onClick={() => setActive("chats")} aria-label="Чаты"><MessageCircle /></button>
-        <button className={active === "gifts" ? "rail-btn active" : "rail-btn"} onClick={() => setActive("gifts")} aria-label="Подарки"><Gift /></button>
-        <button className={active === "contacts" ? "rail-btn active" : "rail-btn"} onClick={() => setActive("contacts")} aria-label="Контакты"><Users /></button>
-        <div className="rail-spacer" />
-        <button className="rail-btn" aria-label="Архив"><Archive /></button>
-        <button className="rail-btn" aria-label="Настройки"><Settings /></button>
-        <div className="profile-mini">M</div>
-      </aside>
+ if(!ready)return <div className="auth-screen"><div className="auth-card">Загрузка Midix Gram…</div></div>;
+ if(!session)return <main className="auth-screen"><form className="auth-card" onSubmit={auth}><div className="brand-mark">M</div><span className="eyebrow">ТВОЁ ОБЩЕНИЕ • ТВОИ ПРАВИЛА</span><h1>Midix Gram</h1><p className="muted">Общайся, делись моментами и собирай подарки.</p><div className="auth-tabs"><button type="button" className={authMode==="login"?"selected":""} onClick={()=>setAuthMode("login")}>Войти</button><button type="button" className={authMode==="signup"?"selected":""} onClick={()=>setAuthMode("signup")}>Регистрация</button></div>{authMode==="signup"&&<label>Имя пользователя<input value={username} onChange={e=>setUsername(e.target.value)} required placeholder="Например, alex"/></label>}<label>Email<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required placeholder="name@example.com"/></label><label>Пароль<input type="password" value={password} onChange={e=>setPassword(e.target.value)} required minLength={6} placeholder="Не менее 6 символов"/></label>{authError&&<p className="error">{authError}</p>}<button className="primary full" disabled={busy}>{busy?"Подождите…":authMode==="login"?"Войти":"Создать аккаунт"}</button>{!isSupabaseConfigured&&<div className="demo-note">Сервер пока не подключён. Добавь NEXT_PUBLIC_SUPABASE_URL и NEXT_PUBLIC_SUPABASE_ANON_KEY в настройки проекта. Это не демо-авторизация: вход станет доступен после подключения.</div>}</form></main>;
 
-      <section className="sidebar">
-        <header className="side-header">
-          <div><span className="eyebrow">MESSENGER</span><h1>Midix <b>Gram</b></h1></div>
-          <button className="icon-btn" aria-label="Новое сообщение"><Plus /></button>
-        </header>
-        <div className="search-box"><Search size={18}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Поиск чатов"/></div>
-        <div className="section-label">{active === "gifts" ? "КАТАЛОГ ПОДАРКОВ" : active === "contacts" ? "КОНТАКТЫ" : "ВСЕ СООБЩЕНИЯ"} <span>{active === "chats" ? chats.length : "✦"}</span></div>
-        {active === "gifts" ? (
-          <div className="gift-list">{gifts.map(g => <button className="gift-row" key={g.name}><span className="gift-emoji">{g.emoji}</span><span><b>{g.name}</b><small>{g.rarity}</small></span><strong>{g.price}</strong></button>)}</div>
-        ) : (
-          <div className="chat-list">{filtered.map(chat => <button key={chat.id} onClick={() => {setSelected(chat.id); setActive("chats");}} className={selected === chat.id ? "chat-row selected" : "chat-row"}><span className="avatar" style={{background:chat.color}}>{chat.name[0]}</span><span className="chat-copy"><b>{chat.name}{chat.online && <i className="online-dot"/>}</b><small>{chat.message}</small></span><span className="chat-meta"><small>{chat.time}</small>{chat.unread && <i className="unread">{chat.unread}</i>}</span></button>)}</div>
-        )}
-        <div className="sidebar-footer"><span className="status-dot"/> Все системы работают <MoreHorizontal size={17}/></div>
-      </section>
-
-      <section className="conversation">
-        {active === "gifts" ? (
-          <div className="welcome-panel"><div className="hero-icon"><Gift size={34}/></div><span className="eyebrow">MIDIX COLLECTIBLES</span><h2>Подарки и коллекции</h2><p>Выбирай подарки, собирай редкие предметы и создавай собственную коллекцию.</p><div className="feature-pills"><span>✦ Редкость</span><span>◇ Коллекции</span><span>↗ Обмен — скоро</span></div></div>
-        ) : active === "contacts" ? (
-          <div className="welcome-panel"><div className="hero-icon"><Users size={34}/></div><h2>Контакты</h2><p>Здесь появится список контактов и поиск пользователей после подключения сервера.</p></div>
-        ) : (
-          <>
-            <header className="conversation-header"><div className="avatar large" style={{background:current.color}}>{current.name[0]}</div><div className="person-title"><b>{current.name}</b><small>{current.online ? "в сети" : "был(а) недавно"}</small></div><div className="header-actions"><button className="icon-btn"><Search/></button><button className="icon-btn"><Bell/></button><button className="icon-btn"><MoreHorizontal/></button></div></header>
-            <div className="message-area"><div className="date-chip">СЕГОДНЯ</div><div className="system-note">Это демонстрационный интерфейс Midix Gram. Сообщения пока хранятся только в состоянии страницы.</div><div className="bubble incoming">Привет! Добро пожаловать в Midix Gram 👋<small>12:18 ✓✓</small></div><div className="bubble incoming">Здесь будут чаты, подарки и коллекции.<small>12:19 ✓✓</small></div>{sent.map((m,i)=><div className="bubble outgoing" key={i}>{m}<small>сейчас ✓</small></div>)}</div>
-            <form className="composer" onSubmit={e => {e.preventDefault(); sendMessage();}}><button type="button" className="icon-btn"><Plus/></button><input value={message} onChange={e => setMessage(e.target.value)} placeholder="Написать сообщение..."/><button type="button" className="icon-btn muted"><Smile/></button><button className="send-btn" aria-label="Отправить"><Send size={18}/></button></form>
-          </>
-        )}
-      </section>
-
-      <aside className="info-panel"><div className="info-top"><span className="eyebrow">ВАШ ПРОФИЛЬ</span><button className="icon-btn"><MoreHorizontal/></button></div><div className="profile-card"><div className="profile-avatar">M</div><h2>Мой профиль</h2><p className="handle">@midix_user</p><span className="profile-badge"><ShieldCheck size={13}/> Midix member</span></div><div className="info-divider"/><div className="info-section"><div className="section-label">БЫСТРЫЙ ДОСТУП</div><button onClick={() => setActive("gifts")}><Gift/> Мои подарки <span>06</span></button><button><ImageIcon/> Медиафайлы <span>—</span></button><button><Archive/> Архив чатов <span>—</span></button></div><div className="info-tip"><span>✦</span><b>Midix collectibles</b><p>Собирай цифровые подарки и открывай редкие коллекции.</p></div><div className="admin-link">ADMIN CONSOLE <span>WEB ONLY</span></div></aside>
-    </main>
-  );
+ return <main className="app-shell">
+  <aside className="rail"><div className="brand-mark">M</div><button className={active==="chats"?"rail-btn active":"rail-btn"} onClick={()=>setActive("chats")} aria-label="Чаты"><MessageCircle/></button><button className={active==="gifts"?"rail-btn active":"rail-btn"} onClick={()=>setActive("gifts")} aria-label="Подарки"><Gift/></button><button className={active==="contacts"?"rail-btn active":"rail-btn"} onClick={()=>setActive("contacts")} aria-label="Контакты"><Users/></button>{profile.role==="admin"&&!native&&<button className="rail-btn" onClick={()=>location.href="/admin"} aria-label="Админ-панель"><ShieldCheck/></button>}<div className="rail-spacer"/><button className="rail-btn" onClick={logout} aria-label="Выйти"><LogOut/></button><div className="profile-mini">{profile.username.slice(0,1).toUpperCase()}</div></aside>
+  <section className={mobileChat?"sidebar mobile-hide":"sidebar"}><header className="side-header"><div><span className="eyebrow">MESSENGER</span><h1>Midix <b>Gram</b></h1></div><button className="icon-btn" onClick={()=>say("Создание чатов добавим следующим обновлением")}><Plus/></button></header><div className="search-box"><Search size={18}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Поиск чатов"/></div><div className="section-label">ВСЕ СООБЩЕНИЯ <span>{filtered.length}</span></div><div className="chat-list">{filtered.map((chat,i)=><button key={chat.id} onClick={()=>{setSelected(chat.id);setActive("chats");setMobileChat(true)}} className={selected===chat.id?"chat-row selected":"chat-row"}><span className="avatar" style={{background:["#64748b","#7c6cf2","#e58a65","#299c91"][i%4]}}>{chat.title[0]}</span><span className="chat-copy"><b>{chat.title}</b><small>{chat.slug==="news"?"Обновления Midix":"Нажми, чтобы открыть чат"}</small></span></button>)}</div><div className="sidebar-footer"><span className="status-dot"/>{isSupabaseConfigured?"Онлайн-соединение":"Сервер не настроен"} <MoreHorizontal size={17}/></div></section>
+  <section className={mobileChat?"conversation":"conversation mobile-hide"}>
+   {active==="gifts"?<div className="welcome-panel"><div className="hero-icon"><Gift size={34}/></div><span className="eyebrow">MIDIX COLLECTIBLES</span><h2>Подарки и коллекции</h2><p>Каталог подарков. Реальные покупки и NFT пока отключены.</p><div className="gift-cards">{gifts.map(g=><article key={g.title}><span>{g.emoji}</span><b>{g.title}</b><small>{g.rarity}</small><strong>{g.price} ⭐</strong></article>)}</div></div>:active==="contacts"?<div className="welcome-panel"><div className="hero-icon"><Users size={34}/></div><h2>Контакты</h2><p>Поиск пользователей и личные чаты появятся следующим этапом.</p></div>:<><header className="conversation-header"><button className="back-mobile" onClick={()=>setMobileChat(false)}>‹</button><div className="avatar large">{current?.title?.[0]||"M"}</div><div className="person-title"><b>{current?.title||"Чат"}</b><small>{session.user.email}</small></div><div className="header-actions"><button className="icon-btn"><Search/></button><button className="icon-btn"><Bell/></button><button className="icon-btn"><MoreHorizontal/></button></div></header><div className="message-area"><div className="date-chip">СООБЩЕНИЯ</div>{messages.map(m=><div key={m.id} className={m.sender_id===session.user.id?"bubble outgoing":"bubble incoming"}>{m.sender_id===session.user.id?"Вы":m.profiles?.username||"Пользователь"}: {m.body}<small>{new Date(m.created_at).toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"})}</small></div>)}{messages.length===0&&<div className="system-note">Пока нет сообщений. Напиши первым!</div>}</div><form className="composer" onSubmit={send}><button type="button" className="icon-btn" onClick={()=>say("Вложения появятся в следующем обновлении")}><Plus/></button><input value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Написать сообщение…"/><button type="button" className="icon-btn muted" onClick={()=>setDraft(d=>d+" 😊")}><Smile/></button><button className="send-btn" aria-label="Отправить"><Send size={18}/></button></form></>}
+  </section>
+  <aside className="info-panel"><div className="info-top"><span className="eyebrow">ВАШ ПРОФИЛЬ</span><button className="icon-btn" onClick={logout}><LogOut/></button></div><div className="profile-card"><div className="profile-avatar">{profile.username.slice(0,1).toUpperCase()}</div><h2>{profile.username}</h2><p className="handle">{session.user.email}</p><span className="profile-badge"><ShieldCheck size={13}/> {profile.role==="admin"?"Администратор":"Midix member"}</span></div><div className="info-divider"/><div className="info-section"><div className="section-label">БЫСТРЫЙ ДОСТУП</div><button onClick={()=>setActive("gifts")}><Gift/> Подарки <span>✦</span></button><button onClick={()=>say("Медиафайлы появятся позже")}><ImageIcon/> Медиафайлы <span>—</span></button><button onClick={()=>say("Архив появится позже")}><Archive/> Архив чатов <span>—</span></button></div><div className="info-tip"><span>✦</span><b>Midix collectibles</b><p>Цифровые подарки и коллекции будут расширены после настройки сервера.</p></div>{!native&&profile.role==="admin"&&<a className="admin-link" href="/admin"><LockKeyhole size={14}/> ADMIN CONSOLE · WEB ONLY</a>}</aside>
+  {toast&&<div className="toast">{toast}</div>}
+ </main>;
 }
