@@ -97,3 +97,69 @@
  .search-box{margin:0 11px 14px}.chat-filter-tabs{padding:0 10px 10px}
  .message-area{padding:14px 10px}.composer{margin:0 10px 12px;min-height:52px}
 }
+
+
+/* Mobile-first Telegram-like shell: full-width chat list and fixed bottom tabs */
+.mobile-nav{display:none}
+@media(max-width:650px){
+  .app-shell{display:block;position:relative;width:100%;height:100dvh;min-height:100dvh;overflow:hidden;background:#1e2935}
+  .rail{display:none!important}
+  .sidebar,.conversation{position:absolute;inset:0;width:100%;height:100%;border:0;min-width:0}
+  .sidebar{padding-bottom:calc(78px + env(safe-area-inset-bottom));background:#1e2935}
+  .conversation{padding-bottom:env(safe-area-inset-bottom);background:#1e2935}
+  .conversation:not(.mobile-hide){display:flex}
+  .conversation.mobile-hide{display:none}
+  .sidebar.mobile-hide{display:none}
+  .mobile-nav{position:absolute;z-index:20;left:12px;right:12px;bottom:calc(9px + env(safe-area-inset-bottom));height:68px;padding:5px 7px;display:flex;align-items:stretch;justify-content:space-around;gap:2px;border:1px solid #344454;border-radius:25px;background:rgba(31,45,59,.96);box-shadow:0 10px 32px #07111c80;backdrop-filter:blur(18px)}
+  .mobile-nav button{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:19px;background:transparent;color:#aab8c6;font-size:10px;font-weight:600}
+  .mobile-nav button svg{width:22px;height:22px;stroke-width:2}
+  .mobile-nav button.active{color:#54aaf4;background:#263f55}
+  .side-header{height:74px;padding:14px 18px}
+  .side-header .eyebrow{display:none}
+  .side-header h1{font-size:25px;letter-spacing:-.7px;color:#f7f9fc}
+  .side-header h1 b{color:#f7f9fc}
+  .brand-mark{border-radius:15px}
+  .search-box{height:48px;margin:0 16px 15px;border:0;border-radius:25px;background:#2b3745;padding:0 17px}
+  .search-box input{font-size:16px}
+  .chat-filter-tabs{margin:0 14px 12px;padding:5px;background:#263442;border-radius:24px;gap:4px}
+  .chat-filter-tabs button{font-size:13px;padding:9px 5px;border-radius:20px}
+  .chat-filter-tabs button.chosen{background:#344e65;color:#7fc5ff}
+  .section-label{font-size:10px;padding:0 19px 9px}
+  .chat-list{padding:0 12px 18px}
+  .chat-row{padding:12px 8px;gap:12px;border-radius:16px}
+  .chat-row.selected{background:#2b3b4b}
+  .avatar{width:52px;height:52px;font-size:20px}
+  .chat-copy b{font-size:16px;font-weight:700}
+  .chat-copy small{font-size:13px;color:#9eacba}
+  .sidebar-footer{display:none}
+  .conversation-header{height:72px;padding:0 12px;background:#1e2935}
+  .person-title b{font-size:15px}
+  .message-area{padding:15px 12px 18px;background:#17212b}
+  .composer{margin:0 10px 12px;min-height:54px;background:#263442;border:0}
+  .bubble{font-size:14px}
+  .welcome-panel{max-height:calc(100dvh - 95px);overflow:auto;padding:22px 18px}
+  .profile-editor{padding:24px 20px 105px;max-height:100%;width:100%;background:#1e2935}
+  .profile-editor>.profile-avatar{width:112px;height:112px;border-radius:50%;font-size:42px}
+  .profile-editor h2{font-size:26px;margin-top:17px}
+  .profile-editor>p{font-size:14px}
+  .profile-form{width:100%;margin-top:25px}
+  .profile-form input,.profile-form textarea{background:#263442;border-color:#354657;font-size:15px}
+  .premium-note{line-height:1.5}
+  .contacts-panel{padding-bottom:100px}
+  .chat-open .mobile-nav{display:none}
+  .chat-open .conversation{padding-bottom:env(safe-area-inset-bottom)}
+  .auth-screen{padding:18px;background:#1e2935}
+  .auth-card{width:100%;max-width:460px;padding:28px 22px;border:0;border-radius:28px;background:#1e2935;box-shadow:none}
+  .auth-card .brand-mark{width:94px;height:94px;border-radius:28px;margin:0 auto 12px;font-size:50px}
+  .auth-card h1{text-align:center;font-size:31px}
+  .auth-card>.eyebrow,.auth-card>.muted{text-align:center}
+  .auth-card>.muted{font-size:15px;line-height:1.55}
+  .auth-card label{font-size:14px}
+  .auth-card input{padding:16px;border-radius:13px;background:#263442;border-color:#3b4c5d;font-size:16px}
+  .auth-tabs{background:#263442;border-radius:14px}
+  .auth-tabs button{padding:13px;border-radius:11px}
+  .primary{padding:15px;border-radius:14px;font-size:15px}
+}
+@media(min-width:651px){
+  .mobile-nav{display:none!important}
+}
