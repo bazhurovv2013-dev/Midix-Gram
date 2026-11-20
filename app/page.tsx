@@ -126,7 +126,8 @@ export default function Home(){
   const channel=supabase.channel("messages-"+current.id).on("postgres_changes",{event:"*",schema:"public",table:"messages",filter:"chat_id=eq."+current.id},async payload=>{
    if(!live)return;
    if(payload.eventType==="DELETE"){const gone=(payload.old as Partial<Msg>).id;if(gone)setMessages(old=>old.filter(m=>m.id!==gone));return;}
-   const row=payload.new as Msg;
+   let row=payload.new as Msg;
+   if(row.media_path){const hydrated=await attachSignedMedia([row]);row=hydrated[0];}
    if(payload.eventType==="UPDATE"){setMessages(old=>old.map(m=>m.id===row.id?{...m,...row}:m));return;}
    const {data:sender}=await supabase!.from("profiles").select("username").eq("id",row.sender_id).maybeSingle();
    setMessages(old=>old.some(m=>m.id===row.id)?old:[...old,{...row,profiles:sender}]);
