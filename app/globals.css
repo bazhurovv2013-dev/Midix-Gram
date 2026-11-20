@@ -204,3 +204,11 @@
  .mobile-nav button{flex:1 1 0;min-width:0;padding:0 1px;font-size:9px;gap:3px}
  .mobile-nav button svg{width:20px;height:20px;flex:none}
 }
+
+
+/* Star wallet, verified identity and gift checkout */
+.stars-balance{display:inline-flex;align-items:center;gap:5px;color:#f4d47e;background:#382f1c;border:1px solid #6e592b;border-radius:999px;padding:7px 11px;font-size:12px;font-weight:800}
+.gift-buy{margin-top:5px;background:#3390ec;color:#fff;border-radius:9px;padding:8px 14px;font-size:11px;font-weight:800}
+.gift-buy:active{transform:scale(.97)}
+.inline-verified{display:inline-block;vertical-align:middle;color:#4bb5f5;fill:#153b55}
+.admin-mobile-actions button:last-child{background:#44391f;color:#f4d47e}
