@@ -163,3 +163,15 @@
 @media(min-width:651px){
   .mobile-nav{display:none!important}
 }
+
+/* Native admin console */
+.admin-mobile{width:min(100%,760px);max-height:100%;overflow:auto;align-items:stretch;text-align:left;padding:22px 16px 110px}
+.admin-mobile>.hero-icon,.admin-mobile>.eyebrow,.admin-mobile>h2,.admin-mobile>p{text-align:center;align-self:center}
+.admin-mobile-head{display:flex;align-items:center;justify-content:space-between;margin:18px 0 10px;padding:12px 14px;border-radius:14px;background:#263442;color:#eef5fc}
+.admin-mobile-user{display:flex;flex-direction:column;gap:9px;padding:14px;margin:8px 0;border:1px solid #354657;border-radius:16px;background:#202d3a}
+.admin-mobile-user-title{display:flex;flex-direction:column;gap:4px}.admin-mobile-user-title small{font-size:11px;color:#9eacba}
+.admin-mobile-actions{display:flex;gap:7px;flex-wrap:wrap}
+.admin-mobile-actions button{flex:1;min-width:90px;padding:10px 8px;border-radius:10px;background:#30465a;color:#bfe1ff;font-size:11px;font-weight:700}
+.admin-mobile-actions button:active{background:#3a5a74}
+.admin-link{display:flex;align-items:center;gap:8px;margin:12px auto;padding:10px 14px;border-radius:12px;background:#263f55;color:#83c6ff}
+@media(max-width:650px){.mobile-nav{overflow-x:auto;justify-content:flex-start}.mobile-nav button{flex:1 0 58px}.admin-mobile{padding:20px 14px 112px}.admin-mobile-actions button{font-size:10px;min-width:82px}}
