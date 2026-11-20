@@ -7,6 +7,9 @@ create table if not exists public.profiles (
   display_name text,
   avatar_url text,
   bio text not null default '',
+  is_premium boolean not null default true,
+  is_verified boolean not null default false,
+  badge_label varchar(32),
   role text not null default 'user' check (role in ('user','admin')),
   created_at timestamptz not null default now()
 );
@@ -58,6 +61,9 @@ alter table public.profiles add column if not exists role text not null default 
 alter table public.profiles add column if not exists display_name text;
 alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists bio text not null default '';
+alter table public.profiles add column if not exists is_premium boolean not null default true;
+alter table public.profiles add column if not exists is_verified boolean not null default false;
+alter table public.profiles add column if not exists badge_label varchar(32);
 alter table public.chats add column if not exists slug text;
 alter table public.chats add column if not exists is_public boolean not null default false;
 create unique index if not exists chats_slug_unique_idx on public.chats(slug);
