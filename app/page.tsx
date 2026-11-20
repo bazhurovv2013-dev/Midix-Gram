@@ -42,7 +42,7 @@ export default function Home(){
  const [toast,setToast]=useState("");
  const [balance,setBalance]=useState(250);
  const [mobileChat,setMobileChat]=useState(false);
- const current=chats.find(c=>c.id===selected)||chats[0];
+ const current=chats.find(c=>c.id===selected)||chats[0]||demoChats[0];
  const filtered=useMemo(()=>chats.filter(c=>c.title.toLowerCase().includes(query.toLowerCase())),[chats,query]);
  const say=(s:string)=>{setToast(s);window.setTimeout(()=>setToast(""),2600)};
 
