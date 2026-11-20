@@ -58,7 +58,13 @@ alter table public.profiles add column if not exists display_name text;
 alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists bio text not null default '';
 alter table public.chats add column if not exists slug text;
+create unique index if not exists chats_slug_unique_idx on public.chats(slug);
 alter table public.messages add column if not exists edited_at timestamptz;
+insert into public.profiles(id,username,display_name)
+select u.id,'user_' || substr(replace(u.id::text,'-',''),1,10),coalesce(u.raw_user_meta_data->>'display_name','')
+from auth.users u
+where not exists(select 1 from public.profiles p where p.id=u.id)
+on conflict(id) do nothing;
 drop policy if exists "Members can view chat membership" on public.chat_members;
 drop policy if exists "Members can view messages" on public.messages;
 drop policy if exists "Members can send messages" on public.messages;
