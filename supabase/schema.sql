@@ -175,3 +175,47 @@ grant execute on function public.admin_set_profile_badges(uuid,boolean,boolean,t
 
 -- Create your first account, then grant admin in SQL:
 -- update public.profiles set role='admin' where username='YOUR_USERNAME';
+
+
+-- Star wallet and secure gift checkout (2026-11)
+alter table public.profiles add column if not exists stars_balance integer not null default 250 check (stars_balance >= 0);
+create table if not exists public.star_transactions (
+ id uuid primary key default gen_random_uuid(),
+ user_id uuid not null references public.profiles(id) on delete cascade,
+ actor_id uuid references public.profiles(id) on delete set null,
+ amount integer not null,
+ reason text not null default '',
+ created_at timestamptz not null default now()
+);
+alter table public.star_transactions enable row level security;
+drop policy if exists "users read own star transactions" on public.star_transactions;
+create policy "users read own star transactions" on public.star_transactions
+ for select to authenticated using (user_id = (select auth.uid()) or public.is_midix_admin());
+create or replace function public.admin_grant_stars(target_user uuid, amount integer, reason text default 'Подарок от администрации')
+returns integer language plpgsql security definer set search_path = '' as $$
+declare new_balance integer;
+begin
+ if auth.uid() is null or not public.is_midix_admin() then raise exception 'Admin access required' using errcode='42501'; end if;
+ if amount < 1 or amount > 100000 then raise exception 'Amount must be between 1 and 100000'; end if;
+ update public.profiles set stars_balance=stars_balance+amount where id=target_user returning stars_balance into new_balance;
+ if new_balance is null then raise exception 'Profile not found'; end if;
+ insert into public.star_transactions(user_id,actor_id,amount,reason) values(target_user,auth.uid(),amount,left(coalesce(reason,''),120));
+ return new_balance;
+end; $$;
+revoke all on function public.admin_grant_stars(uuid,integer,text) from public;
+grant execute on function public.admin_grant_stars(uuid,integer,text) to authenticated;
+create or replace function public.purchase_midix_gift(gift_title text)
+returns jsonb language plpgsql security definer set search_path = '' as $$
+declare g public.gifts%rowtype; new_balance integer; gift_record uuid;
+begin
+ if auth.uid() is null then raise exception 'Authentication required' using errcode='42501'; end if;
+ select * into g from public.gifts where title=gift_title and active=true limit 1;
+ if g.id is null then raise exception 'Gift not found'; end if;
+ update public.profiles set stars_balance=stars_balance-g.price_stars where id=auth.uid() and stars_balance>=g.price_stars returning stars_balance into new_balance;
+ if new_balance is null then raise exception 'Недостаточно звёзд'; end if;
+ insert into public.user_gifts(gift_id,owner_id) values(g.id,auth.uid()) returning id into gift_record;
+ insert into public.star_transactions(user_id,actor_id,amount,reason) values(auth.uid(),auth.uid(),-g.price_stars,'Покупка подарка: '||g.title);
+ return jsonb_build_object('gift_id',gift_record,'balance',new_balance,'title',g.title);
+end; $$;
+revoke all on function public.purchase_midix_gift(text) from public;
+grant execute on function public.purchase_midix_gift(text) to authenticated;
