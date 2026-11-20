@@ -111,7 +111,7 @@ create policy "profile self update" on public.profiles for update to authenticat
 drop policy if exists "admin manage profiles" on public.profiles;
 create policy "admin manage profiles" on public.profiles for all to authenticated using(public.is_midix_admin()) with check(public.is_midix_admin());
 drop policy if exists "chat members read chats" on public.chats;
-create policy "chat members read chats" on public.chats for select to authenticated using(is_public or public.is_chat_member(id));
+create policy "chat members read chats" on public.chats for select to authenticated using(is_public or created_by=auth.uid() or public.is_chat_member(id));
 drop policy if exists "users create chats" on public.chats;
 create policy "users create chats" on public.chats for insert to authenticated with check(created_by=auth.uid());
 drop policy if exists "users join themselves" on public.chat_members;
