@@ -15,6 +15,7 @@ create table if not exists public.chats (
   title text not null,
   slug text unique,
   is_group boolean not null default false,
+  is_public boolean not null default false,
   created_by uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now()
 );
@@ -58,6 +59,7 @@ alter table public.profiles add column if not exists display_name text;
 alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists bio text not null default '';
 alter table public.chats add column if not exists slug text;
+alter table public.chats add column if not exists is_public boolean not null default false;
 create unique index if not exists chats_slug_unique_idx on public.chats(slug);
 alter table public.messages add column if not exists edited_at timestamptz;
 insert into public.profiles(id,username,display_name)
@@ -109,9 +111,11 @@ create policy "profile self update" on public.profiles for update to authenticat
 drop policy if exists "admin manage profiles" on public.profiles;
 create policy "admin manage profiles" on public.profiles for all to authenticated using(public.is_midix_admin()) with check(public.is_midix_admin());
 drop policy if exists "chat members read chats" on public.chats;
-create policy "chat members read chats" on public.chats for select to authenticated using(true);
+create policy "chat members read chats" on public.chats for select to authenticated using(is_public or public.is_chat_member(id));
+drop policy if exists "users create chats" on public.chats;
+create policy "users create chats" on public.chats for insert to authenticated with check(created_by=auth.uid());
 drop policy if exists "users join themselves" on public.chat_members;
-create policy "users join themselves" on public.chat_members for insert to authenticated with check(user_id=auth.uid());
+create policy "users join themselves" on public.chat_members for insert to authenticated with check(user_id=auth.uid() and (exists(select 1 from public.chats c where c.id=chat_id and (c.is_public or c.created_by=auth.uid()))));
 drop policy if exists "chat members read membership" on public.chat_members;
 create policy "chat members read membership" on public.chat_members for select to authenticated using(public.is_chat_member(chat_id) or public.is_midix_admin());
 drop policy if exists "members read messages" on public.messages;
@@ -125,8 +129,25 @@ create policy "admins manage gifts" on public.gifts for all to authenticated usi
 drop policy if exists "users read owned gifts" on public.user_gifts;
 create policy "users read owned gifts" on public.user_gifts for select to authenticated using(owner_id=auth.uid() or public.is_midix_admin());
 
-insert into public.chats(title,slug,is_group) values
-('Общий чат','general',true),('Друзья','friends',true),('Новости Midix','news',true)
+
+-- Create a private one-to-one conversation without exposing membership writes.
+create or replace function public.create_direct_chat(target_user uuid)
+returns uuid language plpgsql security definer set search_path=public as $
+declare new_chat uuid; target_name text;
+begin
+ if auth.uid() is null or target_user=auth.uid() then raise exception 'Invalid recipient'; end if;
+ if not exists(select 1 from public.profiles where id=target_user) then raise exception 'User not found'; end if;
+ select username into target_name from public.profiles where id=target_user;
+ insert into public.chats(title,is_group,is_public,created_by)
+ values(coalesce(target_name,'Личный чат'),false,false,auth.uid()) returning id into new_chat;
+ insert into public.chat_members(chat_id,user_id) values(new_chat,auth.uid()),(new_chat,target_user);
+ return new_chat;
+end; $;
+revoke all on function public.create_direct_chat(uuid) from public;
+grant execute on function public.create_direct_chat(uuid) to authenticated;
+
+insert into public.chats(title,slug,is_group,is_public) values
+('Общий чат','general',true,true),('Друзья','friends',true,true),('Новости Midix','news',true,true)
 on conflict(slug) do nothing;
 insert into public.gifts(title,emoji,price_stars,rarity) values
 ('Роза','🌹',15,'common'),('Мишка','🧸',50,'rare'),('Кристалл','💎',120,'epic'),('Корона','👑',500,'legendary'),('Ракета','🚀',250,'epic'),('Сюрприз','🎁',80,'rare')
