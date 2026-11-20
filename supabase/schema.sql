@@ -70,6 +70,7 @@ on conflict(id) do nothing;
 drop policy if exists "Members can view chat membership" on public.chat_members;
 drop policy if exists "Members can view messages" on public.messages;
 drop policy if exists "Members can send messages" on public.messages;
+alter table public.messages alter column sender_id drop not null;
 alter table public.messages drop constraint if exists messages_sender_id_fkey;
 alter table public.messages add constraint messages_sender_id_fkey foreign key(sender_id) references public.profiles(id) on delete set null;
 
@@ -132,7 +133,7 @@ create policy "users read owned gifts" on public.user_gifts for select to authen
 
 -- Create a private one-to-one conversation without exposing membership writes.
 create or replace function public.create_direct_chat(target_user uuid)
-returns uuid language plpgsql security definer set search_path=public as $
+returns uuid language plpgsql security definer set search_path=public as $$
 declare new_chat uuid; target_name text;
 begin
  if auth.uid() is null or target_user=auth.uid() then raise exception 'Invalid recipient'; end if;
@@ -142,7 +143,7 @@ begin
  values(coalesce(target_name,'Личный чат'),false,false,auth.uid()) returning id into new_chat;
  insert into public.chat_members(chat_id,user_id) values(new_chat,auth.uid()),(new_chat,target_user);
  return new_chat;
-end; $;
+end; $$;
 revoke all on function public.create_direct_chat(uuid) from public;
 grant execute on function public.create_direct_chat(uuid) to authenticated;
 
@@ -152,7 +153,6 @@ on conflict(slug) do nothing;
 insert into public.gifts(title,emoji,price_stars,rarity) values
 ('Роза','🌹',15,'common'),('Мишка','🧸',50,'rare'),('Кристалл','💎',120,'epic'),('Корона','👑',500,'legendary'),('Ракета','🚀',250,'epic'),('Сюрприз','🎁',80,'rare')
 on conflict do nothing;
-do $ begin alter publication supabase_realtime add table public.messages; exception when duplicate_object then null; end $;
 revoke update on public.profiles from authenticated;
 grant update(username,display_name,avatar_url,bio) on public.profiles to authenticated;
 -- Create your first account, then grant admin in SQL:
