@@ -44,3 +44,19 @@
 .contact-row small{color:#9299ac;font-size:11px}
 .contact-action{font-size:11px;color:#c6b8ff;background:#302b4d;padding:8px 10px;border-radius:8px}
 @media(max-width:650px){.contacts-panel{padding:14px}.contact-row{padding:9px}.contact-action{font-size:10px}}
+
+/* Midix Gram profile and identity badges */
+.identity-badges{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:14px 0}
+.premium-mark,.verified-mark,.custom-mark{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.3px}
+.premium-mark{color:#f5d58a;background:#352b18;border:1px solid #725a2b}
+.verified-mark{color:#8fd8ff;background:#152d40;border:1px solid #2c6688}
+.custom-mark{color:#d4c8ff;background:#292342;border:1px solid #51427f}
+.profile-editor{width:min(100%,540px);max-height:100%;overflow:auto}
+.profile-editor>.profile-avatar{width:92px;height:92px;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;background:linear-gradient(140deg,#a49aff,#6555dc);font-size:38px;font-weight:800;box-shadow:0 10px 35px #7163e544}
+.profile-form{display:flex;flex-direction:column;gap:13px;text-align:left;margin:22px auto 14px;width:min(100%,390px)}
+.profile-form label{display:flex;flex-direction:column;gap:7px;color:#c8cad5;font-size:12px}
+.profile-form input,.profile-form textarea{width:100%;background:#111521;border:1px solid #303647;border-radius:10px;padding:13px;color:#fff;font:inherit;outline:none}
+.profile-form textarea{min-height:100px;resize:vertical}
+.premium-note{display:flex;align-items:center;justify-content:center;gap:8px;color:#f1d28b!important}
+.rail-btn:focus-visible,.icon-btn:focus-visible,.chat-row:focus-visible,.primary:focus-visible{outline:2px solid #a99fff;outline-offset:2px}
+@media(max-width:650px){.profile-editor{padding:18px;max-height:calc(100dvh - 24px)}.profile-form{margin-top:16px}.rail{z-index:5}.sidebar,.conversation{min-height:0}.conversation{z-index:2}}
