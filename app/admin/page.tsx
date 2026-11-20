@@ -22,7 +22,7 @@ export default function AdminPage(){
   if(peopleError)setError(peopleError.message);else setPeople((data||[]) as Person[]);
   setLoading(false);
  }
- async function updatePerson(id:string,patch:Partial<Person>){if(!supabase)return;const {error}=await supabase.from("profiles").update(patch).eq("id",id);if(error){setError(error.message);return}setPeople(old=>old.map(p=>p.id===id?{...p,...patch}:p));}
+ async function updatePerson(id:string,patch:Partial<Person>){if(!supabase)return;const person=people.find(p=>p.id===id);if(!person)return;const next={...person,...patch};const {error}=await supabase.rpc("admin_set_profile_badges",{target_user:id,verified:next.is_verified,premium:next.is_premium,badge:next.badge_label||""});if(error){setError(error.message);return}setPeople(old=>old.map(p=>p.id===id?next:p));}
  useEffect(()=>{if(/Capacitor|MidixGramAndroid/i.test(navigator.userAgent)){setError("Админ-панель доступна только на сайте.");setLoading(false);return}load()},[]);
  if(loading)return <main className="admin-page">Загрузка панели…</main>;
  if(!allowed)return <main className="admin-page"><div className="admin-card"><LockKeyhole/><h1>Доступ запрещён</h1><p>{error||"Для просмотра панели нужна роль администратора."}</p><button onClick={()=>router.push("/")}>На главную</button></div></main>;
