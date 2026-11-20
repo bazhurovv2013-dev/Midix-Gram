@@ -113,7 +113,7 @@ create policy "admin manage profiles" on public.profiles for all to authenticate
 drop policy if exists "chat members read chats" on public.chats;
 create policy "chat members read chats" on public.chats for select to authenticated using(is_public or created_by=auth.uid() or public.is_chat_member(id));
 drop policy if exists "users create chats" on public.chats;
-create policy "users create chats" on public.chats for insert to authenticated with check(created_by=auth.uid());
+create policy "users create chats" on public.chats for insert to authenticated with check(created_by=auth.uid() and is_public=false);
 drop policy if exists "users join themselves" on public.chat_members;
 create policy "users join themselves" on public.chat_members for insert to authenticated with check(user_id=auth.uid() and (exists(select 1 from public.chats c where c.id=chat_id and (c.is_public or c.created_by=auth.uid()))));
 drop policy if exists "chat members read membership" on public.chat_members;
