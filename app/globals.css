@@ -67,3 +67,33 @@
 .admin-user-actions{display:flex;gap:5px;flex-wrap:wrap}
 .admin-user-actions button{font-size:9px;padding:7px 8px;white-space:nowrap}
 @media(max-width:800px){.admin-user-row{grid-template-columns:1fr 1fr}.admin-user-actions{grid-column:1/-1}.admin-table-row.heading{display:none}}
+
+/* Telegram-inspired layout polish and mobile conversation visibility */
+:root{--accent:#3390ec;--accent2:#287fc9}
+.app-shell{background:#0e1621;grid-template-columns:68px 350px minmax(320px,1fr) 270px}
+.rail{background:#17212b;border-right:1px solid #263442}.sidebar{background:#17212b;border-right:1px solid #263442}
+.conversation{background:#0e1621}.side-header{height:82px}.side-header h1 b{color:#65b7ff}
+.brand-mark{background:linear-gradient(145deg,#59b5ff,#2585d5);box-shadow:0 7px 22px #2585d544}
+.rail-btn.active{background:#243f59;color:#69baff}.search-box{background:#242f3d;border-color:#2b3a49;border-radius:22px}
+.chat-row{border-radius:12px;padding:11px 10px}.chat-row:hover,.chat-row.selected{background:#202f3e}
+.avatar,.avatar.large{border-radius:50%}.conversation-header{background:#17212b;border-color:#263442}
+.message-area{background-color:#0e1621;background-image:radial-gradient(#ffffff05 1px,transparent 1px)}
+.incoming{background:#182533;border-bottom-left-radius:5px}.outgoing{background:#2b5278;border-bottom-right-radius:5px}
+.composer{background:#17212b;border-color:#293847;border-radius:24px}.send-btn{background:#3390ec;box-shadow:none;border-radius:50%}
+.primary{background:#3390ec}.auth-screen{background:radial-gradient(ellipse at 50% 0%,#1c3b59 0%,#0e1621 60%)}
+.auth-card{background:#17212b;border-color:#293847}.auth-tabs button.selected{background:#243f59}
+.auth-card input{background:#0e1621;border-color:#293847}.profile-avatar{border-radius:50%;background:linear-gradient(145deg,#59b5ff,#2585d5);box-shadow:0 10px 30px #2585d544}
+.chat-filter-tabs{display:flex;gap:5px;padding:0 14px 13px}
+.chat-filter-tabs button{flex:1;padding:8px 6px;border-radius:9px;background:transparent;color:#9aaaba;font-size:11px;font-weight:700}
+.chat-filter-tabs button.chosen{background:#243f59;color:#75bdff}
+.side-head-actions{display:flex;gap:4px}.side-head-actions .icon-btn{width:36px;height:36px}.chat-list{padding-bottom:12px}
+@media(max-width:1100px){.app-shell{grid-template-columns:62px 300px minmax(0,1fr)}}
+@media(max-width:650px){
+ .app-shell{grid-template-columns:54px minmax(0,1fr);height:100dvh;min-height:100dvh}
+ .rail{padding:14px 0;gap:11px}.rail-btn{width:37px;height:37px}
+ .sidebar{grid-column:2;grid-row:1}.conversation{grid-column:2;grid-row:1;display:none}
+ .conversation:not(.mobile-hide){display:flex}.conversation.mobile-hide{display:none}.sidebar.mobile-hide{display:none}
+ .side-header{height:70px;padding:12px}.side-header h1{font-size:19px}
+ .search-box{margin:0 11px 14px}.chat-filter-tabs{padding:0 10px 10px}
+ .message-area{padding:14px 10px}.composer{margin:0 10px 12px;min-height:52px}
+}
