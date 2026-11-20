@@ -229,3 +229,24 @@
 .emoji-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;max-height:190px;overflow:auto}.emoji-grid button{height:39px;border-radius:9px;background:transparent;font-family:system-ui,-apple-system,"Apple Color Emoji","Segoe UI Emoji";font-size:25px;line-height:1}.emoji-grid button:active{background:#dcecff;transform:scale(1.12)}
 .emoji-trigger.active{color:#3390ec;background:#203a52;border-radius:50%}
 @media(max-width:650px){.ios-emoji-picker{left:8px;right:8px;bottom:74px;max-width:none;padding:11px;border-radius:21px}.emoji-grid{grid-template-columns:repeat(8,minmax(0,1fr));max-height:210px}.emoji-grid button{height:41px;font-size:26px}.emoji-categories button{font-size:11px}}
+
+
+/* Rich Telegram-inspired profile studio */
+.profile-studio{width:min(100%,820px);max-height:100%;overflow:auto;padding:16px 16px 112px;text-align:left;align-items:stretch;gap:14px}
+.profile-preview{--profile-accent:#3390ec;overflow:hidden;border:1px solid #ffffff18;border-radius:24px;background:#1c2937;box-shadow:0 18px 55px #0003}
+.profile-cover{position:relative;height:180px;background-size:cover;background-position:center;display:flex;justify-content:flex-end;align-items:flex-start;padding:12px}
+.cover-upload,.avatar-upload{display:inline-flex;align-items:center;gap:6px;padding:9px 12px;border-radius:999px;background:#0b1524bb;color:#fff;border:1px solid #ffffff35;font-size:11px;font-weight:800;backdrop-filter:blur(12px);cursor:pointer}
+.cover-upload input,.avatar-upload input{display:none}
+.profile-preview-main{display:flex;align-items:flex-end;gap:14px;padding:0 18px;margin-top:-47px;position:relative}
+.profile-avatar-wrap{position:relative;flex:none;width:96px;height:96px}
+.profile-avatar-wrap .profile-avatar,.profile-avatar-photo{width:96px;height:96px;border-radius:28px;border:4px solid #1c2937;object-fit:cover}
+.profile-avatar-wrap .profile-avatar{display:grid;place-items:center;background:var(--profile-accent);font-size:38px}
+.avatar-upload{position:absolute;right:-4px;bottom:0;width:31px;height:31px;justify-content:center;padding:0;border-radius:50%;font-size:14px}
+.profile-preview-name{min-width:0;padding-bottom:3px}.profile-preview-name h2{font-size:21px;line-height:1.2;margin:5px 0;color:#fff;overflow-wrap:anywhere}.profile-preview-name p{margin:0;color:#9fb0c2;font-size:13px}
+.profile-status-pill{display:inline-flex;margin-top:7px;padding:4px 9px;border-radius:999px;background:color-mix(in srgb,var(--profile-accent) 22%,transparent);color:#cde8ff;font-size:11px}
+.profile-bio-preview{padding:0 19px;margin:15px 0 9px;text-align:left;color:#e6edf5;line-height:1.5;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.profile-meta-preview{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px 14px;color:#aebfd0;font-size:11px}.profile-meta-preview span{padding:6px 9px;border-radius:9px;background:#ffffff0b}
+.profile-preview .identity-badges{padding:0 18px 13px}.profile-quick-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;padding:0 14px 14px}.profile-quick-actions button{padding:10px 6px;border-radius:12px;background:#ffffff0c;color:#c9d8e7;font-size:11px;font-weight:700}
+.profile-settings-form{width:100%;margin:0;padding:18px;border:1px solid #ffffff15;border-radius:20px;background:#202e3d}.profile-settings-form h3{margin:0 0 5px;color:#f5f8fc;font-size:17px}.profile-settings-form label{display:flex;flex-direction:column;gap:7px;margin:0 0 12px;color:#b9c8d7;font-size:12px;font-weight:700}.profile-settings-form input,.profile-settings-form textarea,.profile-settings-form select{width:100%;min-width:0;padding:12px 13px;border:1px solid #ffffff18;border-radius:12px;background:#172330;color:#f4f7fb;font-size:14px;outline:none}.profile-settings-form input:focus,.profile-settings-form textarea:focus,.profile-settings-form select:focus{border-color:var(--profile-accent,#3390ec)}.profile-settings-form textarea{min-height:86px;resize:vertical}
+.profile-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}.profile-color-picker{display:flex;flex-wrap:wrap;gap:10px;padding:5px 0}.profile-color-picker button{width:31px;height:31px;border:3px solid #ffffff20;border-radius:50%;box-shadow:0 0 0 1px #0004}.profile-color-picker button.chosen{outline:3px solid #dcecff;outline-offset:3px;transform:scale(1.05)}
+@media(max-width:650px){.profile-studio{padding:12px 12px 110px;gap:12px}.profile-cover{height:145px}.profile-preview-main{gap:10px;padding:0 13px;margin-top:-40px}.profile-avatar-wrap,.profile-avatar-wrap .profile-avatar,.profile-avatar-photo{width:80px;height:80px}.profile-avatar-wrap .profile-avatar{font-size:32px;border-radius:24px}.profile-preview-name h2{font-size:18px}.profile-settings-form{padding:15px}.profile-form-grid{grid-template-columns:1fr}.profile-quick-actions button{font-size:10px;padding:10px 3px}}
