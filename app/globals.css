@@ -175,3 +175,32 @@
 .admin-mobile-actions button:active{background:#3a5a74}
 .admin-link{display:flex;align-items:center;gap:8px;margin:12px auto;padding:10px 14px;border-radius:12px;background:#263f55;color:#83c6ff}
 @media(max-width:650px){.mobile-nav{overflow-x:auto;justify-content:flex-start}.mobile-nav button{flex:1 0 58px}.admin-mobile{padding:20px 14px 112px}.admin-mobile-actions button{font-size:10px;min-width:82px}}
+
+
+/* Refined Telegram-inspired onboarding and six-tab Android navigation */
+.telegram-auth{gap:15px}
+.telegram-auth-top{display:flex;flex-direction:column;align-items:center;text-align:center;gap:9px}
+.telegram-auth-top .brand-mark{width:104px;height:104px;border-radius:32px;font-size:54px;margin-bottom:8px}
+.telegram-auth-top .eyebrow{letter-spacing:3px;color:#69baff;font-size:10px;font-weight:800}
+.telegram-auth-top h1{font-size:27px;letter-spacing:-.6px}
+.telegram-auth-top .muted{max-width:290px}
+.auth-method-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:5px;border-radius:14px;background:#111d29}
+.auth-method-tabs button{padding:11px;border-radius:10px;background:transparent;color:#9eacba;font-weight:700}
+.auth-method-tabs button.chosen{background:#2b5278;color:#fff}
+.auth-name-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.auth-name-grid label{min-width:0}
+.otp-hint{padding:12px;border-radius:12px;background:#203448;color:#b9c9d8;font-size:12px;text-align:center}
+.otp-hint b{color:#fff}
+.auth-resend{align-self:flex-start;background:transparent;color:#72baff;font-size:12px;padding:3px 0}
+.auth-footnote{font-size:10px;line-height:1.5;color:#8799aa;text-align:center}
+@media(max-width:650px){
+ .telegram-auth{padding:24px 20px;gap:14px}
+ .telegram-auth-top .brand-mark{width:100px;height:100px}
+ .telegram-auth-top h1{font-size:29px}
+ .auth-method-tabs{background:#263442}
+ .auth-name-grid{gap:8px}
+ .auth-name-grid input{min-width:0}
+ .mobile-nav{overflow:hidden;justify-content:space-between;gap:0;padding:5px 4px}
+ .mobile-nav button{flex:1 1 0;min-width:0;padding:0 1px;font-size:9px;gap:3px}
+ .mobile-nav button svg{width:20px;height:20px;flex:none}
+}
