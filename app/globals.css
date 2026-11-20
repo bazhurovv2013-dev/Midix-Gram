@@ -33,3 +33,14 @@
 .role-admin{color:#c6b8ff}.role-user{color:#a0d7b6}.admin-foot{font-size:11px}
 @media(max-width:1000px){.app-shell{grid-template-columns:64px 280px minmax(0,1fr)}.info-panel{display:none}}
 @media(max-width:650px){.app-shell{height:100dvh;min-height:100dvh;grid-template-columns:58px minmax(0,1fr);overflow:hidden}.sidebar{grid-column:2;grid-row:1;min-width:0}.conversation{grid-column:2;grid-row:1;min-width:0}.mobile-hide{display:none!important}.back-mobile{display:block}.conversation-header{padding:0 12px}.message-area{padding:15px 12px}.composer{padding:10px}.gift-cards{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-page{padding:18px}.admin-page>header{align-items:flex-start;flex-direction:column}.admin-stats{grid-template-columns:1fr}.admin-table-row{grid-template-columns:1.4fr .8fr 1fr;font-size:10px}}
+
+/* Contacts, groups and refined responsive controls */
+.contacts-panel{width:min(100%,680px);align-items:stretch;text-align:left}
+.contacts-panel>.hero-icon,.contacts-panel>.eyebrow,.contacts-panel>h2,.contacts-panel>p{text-align:center;align-self:center}
+.contact-search{display:flex;align-items:center;gap:10px;background:#111521;border:1px solid #303647;border-radius:12px;padding:0 13px;margin:10px 0 14px;color:#9da4b7}
+.contact-search input{width:100%;min-width:0;background:transparent;border:0;outline:none;padding:13px 0;color:#fff}
+.contact-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#171b28;border:1px solid #2b3040;border-radius:12px;padding:11px;margin:5px 0;color:#f5f5fa}
+.contact-row>span:nth-child(2){display:flex;flex-direction:column;gap:4px;flex:1;min-width:0}
+.contact-row small{color:#9299ac;font-size:11px}
+.contact-action{font-size:11px;color:#c6b8ff;background:#302b4d;padding:8px 10px;border-radius:8px}
+@media(max-width:650px){.contacts-panel{padding:14px}.contact-row{padding:9px}.contact-action{font-size:10px}}
