@@ -1,40 +1,38 @@
 # Midix Gram
 
-A Telegram-inspired independent messenger starter with a responsive dark UI, demo chats, gift catalog, and a Supabase database foundation.
+Самостоятельный мессенджер в стиле Telegram. Это не официальный клиент Telegram и не подключение к серверам Telegram.
 
-## Current status
+## Что реализовано в основе
+- Адаптивный Next.js интерфейс для компьютера и Android.
+- Регистрация и вход через Supabase Auth.
+- Схема профилей, комнат, участников, сообщений и подарков.
+- Загрузка сообщений из Supabase и подписка на новые сообщения через Realtime.
+- Веб-админка по адресу `/admin`, доступная только аккаунтам с ролью `admin`; в Android-клиенте раздел не показывается.
+- Capacitor-конфигурация и GitHub Actions workflow для тестовой Android APK.
 
-This is a **front-end prototype**, not a production messenger:
-- Responsive messenger interface with sample chats
-- Demo message composer (messages are held in browser memory only)
-- Gift catalog mockup
-- Supabase schema starter for profiles, chats, memberships, messages, gifts, and owned gifts
+## Настройка онлайн-сервера
+1. Создай проект в Supabase.
+2. В Settings → API скопируй Project URL и anon/publishable key.
+3. В GitHub → Settings → Secrets and variables → Actions добавь:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Выполни `supabase/schema.sql` в Supabase SQL Editor.
+5. В Authentication включи Email provider.
+6. Создай аккаунт в Midix Gram. Чтобы выдать себе админ-доступ, выполни SQL:
+   `update public.profiles set role='admin' where username='ТВОЙ_USERNAME';`
 
-Authentication, realtime messaging, uploads, push notifications, payments, NFT minting/transfers, and the secure web-only admin console are not implemented yet.
+Никогда не помещай `service_role` key в браузер или APK. Роль администратора изменяй только через SQL/защищённый сервер.
 
-## Run locally
-
-Requires Node.js 20+.
-
+## Локальный запуск
+Требуется Node.js 20+:
 ```bash
 npm install
 cp .env.example .env.local
 npm run dev
 ```
+Заполни переменные Supabase в `.env.local`.
 
-Open http://localhost:3000.
+## Получить APK
+Открой GitHub → Actions → **Build Midix Gram Android APK** → **Run workflow**. После успешного запуска скачай Artifact `Midix-Gram-Android-debug`.
 
-## Supabase
-
-1. Create a Supabase project.
-2. Add the project URL and anon key to `.env.local`.
-3. Run `supabase/schema.sql` in the Supabase SQL Editor.
-4. Review and test every RLS policy before using real accounts or data.
-
-## Admin console
-
-The planned admin console is web-only. Do not expose admin controls in the Android client. Admin authorization must be checked server-side on every privileged operation; hiding a button or route is not security.
-
-## Android
-
-An Android app can later be built with Capacitor or a native shell. No APK has been built yet.
+Это debug APK для тестирования, не подписанный релиз Google Play. Для публикации потребуется release keystore и AAB. Если Supabase secrets не добавлены, APK соберётся, но онлайн-авторизация и синхронизация не заработают.
