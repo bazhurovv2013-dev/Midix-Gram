@@ -257,3 +257,6 @@
 .reply-quote{margin:0 0 7px;padding:7px 9px;border-left:3px solid #55aaf4;border-radius:5px;background:#07111c35;color:#c6e4ff;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .composer-context{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 12px 6px;padding:8px 12px;border-left:3px solid #55aaf4;border-radius:10px;background:#263b50;color:#dceeff}.composer-context>div{display:flex;flex-direction:column;min-width:0;gap:3px}.composer-context b{font-size:11px;color:#83c6ff}.composer-context small{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70vw}.composer-context>button{width:27px;height:27px;border-radius:50%;background:#ffffff12;color:#fff;font-size:20px}
 @media(max-width:650px){.message-tools button{font-size:10px;padding:5px 8px}.composer-context{margin:0 10px 6px}}
+
+.message-search-bar{display:flex;align-items:center;gap:9px;padding:9px 13px;margin:0 12px 7px;border-radius:14px;background:#263442;color:#aebfd0}.message-search-bar input{flex:1;min-width:0;background:transparent;color:#f3f7fb;border:0;outline:none;font-size:14px}.message-search-bar button{font-size:21px;color:#d4e1ee;background:transparent}
+@media(max-width:650px){.message-search-bar{margin:0 10px 7px}}
