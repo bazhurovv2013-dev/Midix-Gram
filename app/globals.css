@@ -219,3 +219,13 @@
 .reaction-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:12px;background:rgba(120,145,170,.15);border:1px solid rgba(150,175,200,.15);font-size:12px;line-height:1.3}
 .reaction-chip span{font-size:10px;color:#a9c4dc;font-weight:700}
 .reaction-chip.mine{background:rgba(51,144,236,.22);border-color:rgba(51,144,236,.65)}
+
+
+/* iOS-inspired emoji keyboard */
+.ios-emoji-picker{position:absolute;z-index:30;left:12px;right:12px;bottom:76px;max-width:520px;padding:13px;border:1px solid #d8dce3;border-radius:22px;background:rgba(248,249,252,.98);color:#20232a;box-shadow:0 18px 55px #0005;backdrop-filter:blur(24px)}
+.emoji-picker-top{display:flex;align-items:center;justify-content:space-between;padding:0 3px 9px;font-size:14px}.emoji-picker-top button{width:28px;height:28px;border-radius:50%;background:#e5e7eb;color:#3b414b;font-size:21px;line-height:1}
+.emoji-search{width:100%;height:36px;padding:0 12px;border:0;border-radius:11px;background:#e9ebef;color:#222;font-size:14px;outline:none}
+.emoji-categories{display:flex;gap:5px;overflow-x:auto;padding:10px 0;scrollbar-width:none}.emoji-categories button{flex:none;padding:6px 9px;border-radius:9px;background:#eceef2;color:#555d69;font-size:11px}.emoji-categories button.active{background:#d7eaff;color:#0877d1;font-weight:700}
+.emoji-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:2px;max-height:190px;overflow:auto}.emoji-grid button{height:39px;border-radius:9px;background:transparent;font-family:system-ui,-apple-system,"Apple Color Emoji","Segoe UI Emoji";font-size:25px;line-height:1}.emoji-grid button:active{background:#dcecff;transform:scale(1.12)}
+.emoji-trigger.active{color:#3390ec;background:#203a52;border-radius:50%}
+@media(max-width:650px){.ios-emoji-picker{left:8px;right:8px;bottom:74px;max-width:none;padding:11px;border-radius:21px}.emoji-grid{grid-template-columns:repeat(8,minmax(0,1fr));max-height:210px}.emoji-grid button{height:41px;font-size:26px}.emoji-categories button{font-size:11px}}
